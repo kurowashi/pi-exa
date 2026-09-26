@@ -18,6 +18,15 @@ export interface WaitSettings {
 	pollIntervalMs: number;
 }
 
+/** `wait` settings as written in a config file: same fields, but in seconds. */
+export interface WaitConfig {
+	enabled?: boolean;
+	/** Give up waiting after this many seconds. */
+	timeoutSeconds?: number;
+	/** Delay between polls, in seconds. */
+	pollIntervalSeconds?: number;
+}
+
 export interface OutputSettings {
 	/** Maximum number of search results rendered for the model. Extra results are omitted. */
 	maxResults: number;
@@ -36,8 +45,8 @@ export interface ExaConfigFile {
 	apiKeyEnv?: string;
 	/** Exa API base URL. Defaults to `https://api.exa.ai`. */
 	baseUrl?: string;
-	/** Per-request timeout in milliseconds. */
-	timeoutMs?: number;
+	/** Per-request timeout in seconds. */
+	timeoutSeconds?: number;
 	/**
 	 * Tool groups active at session start. Defaults to `["core"]`.
 	 * Use `"all"` to load every tool immediately (uses more context).
@@ -64,9 +73,9 @@ export interface ExaConfigFile {
 	};
 	/** Waiting behavior for asynchronous agents. */
 	wait?: {
-		agent?: Partial<WaitSettings>;
-		webset?: Partial<WaitSettings>;
-		batch?: Partial<WaitSettings>;
+		agent?: WaitConfig;
+		webset?: WaitConfig;
+		batch?: WaitConfig;
 	};
 	/** Model-facing output budget. */
 	output?: Partial<OutputSettings>;

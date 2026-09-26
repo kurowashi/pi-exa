@@ -100,7 +100,7 @@ test("websets validates required arguments before sending", async () => {
 
 test("webset get waits until the webset is idle", async () => {
 	const h = createToolHarness(registerWebsetsTool, {
-		wait: { webset: { enabled: true, timeoutMs: 500, pollIntervalMs: 1 } },
+		wait: { webset: { enabled: true, timeoutSeconds: 10, pollIntervalSeconds: 1 } },
 	});
 	h.queue(responseOf({ id: "ws_1", status: "running" }), responseOf({ id: "ws_1", status: "idle" }));
 	const result = await h.call("exa_websets", { action: "get", websetId: "ws_1" });

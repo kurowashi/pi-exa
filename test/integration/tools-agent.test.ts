@@ -23,7 +23,7 @@ test("exa_agent_run with wait=false returns immediately", async () => {
 
 test("exa_agent_run polls to completion when asked to wait", async () => {
 	const h = createToolHarness(registerAgentTools, {
-		wait: { agent: { enabled: true, timeoutMs: 500, pollIntervalMs: 1 } },
+		wait: { agent: { enabled: true, timeoutSeconds: 10, pollIntervalSeconds: 1 } },
 	});
 	h.queue(responseOf({ id: "run_2", status: "running" }), responseOf({ id: "run_2", status: "completed" }));
 	const result = await h.call("exa_agent_run", { query: "find y" });
@@ -34,20 +34,20 @@ test("exa_agent_run polls to completion when asked to wait", async () => {
 });
 
 test("exa_agent_run reports a timed-out wait with a resume hint", async () => {
-	// The config reader clamps waits to >=1s / >=250ms, so the test spends one second here.
+	// The config reader clamps waits to whole seconds, so the test spends one second here.
 	const h = createToolHarness(registerAgentTools, {
-		wait: { agent: { enabled: true, timeoutMs: 1000, pollIntervalMs: 250 } },
+		wait: { agent: { enabled: true, timeoutSeconds: 1, pollIntervalSeconds: 1 } },
 	});
 	h.queue(responseOf({ id: "run_3", status: "running" }));
 	const result = await h.call("exa_agent_run", { query: "find z" });
 
-	assert.match(toolText(result), /timed out after 1000ms/);
+	assert.match(toolText(result), /timed out after 1s/);
 	assert.match(toolText(result), /runId=run_3/);
 });
 
 test("exa_agent_get fetches a run and can wait for it", async () => {
 	const h = createToolHarness(registerAgentTools, {
-		wait: { agent: { enabled: true, timeoutMs: 500, pollIntervalMs: 1 } },
+		wait: { agent: { enabled: true, timeoutSeconds: 10, pollIntervalSeconds: 1 } },
 	});
 	h.queue(responseOf({ id: "run_4", status: "running" }), responseOf({ id: "run_4", status: "completed" }));
 	const result = await h.call("exa_agent_get", { runId: "run_4" });
@@ -110,7 +110,7 @@ test("exa_batch dispatches list, delete, and cancel", async () => {
 
 test("exa_batch get waits for a terminal status", async () => {
 	const h = createToolHarness(registerBatchTool, {
-		wait: { batch: { enabled: true, timeoutMs: 500, pollIntervalMs: 1 } },
+		wait: { batch: { enabled: true, timeoutSeconds: 10, pollIntervalSeconds: 1 } },
 	});
 	h.queue(responseOf({ id: "batch_3", status: "in_progress" }), responseOf({ id: "batch_3", status: "completed" }));
 	const result = await h.call("exa_batch", { action: "get", batchId: "batch_3" });

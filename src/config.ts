@@ -147,9 +147,11 @@ function mergeWait(configs: ExaConfigFile[], key: "agent" | "webset" | "batch"):
 	for (const config of configs) {
 		const wait = objectOrEmpty(objectOrEmpty(config.wait)[key]);
 		if (typeof wait["enabled"] === "boolean") merged.enabled = wait["enabled"];
-		if (wait["timeoutMs"] !== undefined) merged.timeoutMs = positiveInt(wait["timeoutMs"], merged.timeoutMs, 1_000);
-		if (wait["pollIntervalMs"] !== undefined) {
-			merged.pollIntervalMs = positiveInt(wait["pollIntervalMs"], merged.pollIntervalMs, 250);
+		if (wait["timeoutSeconds"] !== undefined) {
+			merged.timeoutMs = positiveInt(wait["timeoutSeconds"], merged.timeoutMs / 1000, 1) * 1000;
+		}
+		if (wait["pollIntervalSeconds"] !== undefined) {
+			merged.pollIntervalMs = positiveInt(wait["pollIntervalSeconds"], merged.pollIntervalMs / 1000, 1) * 1000;
 		}
 	}
 	return merged;
@@ -224,7 +226,9 @@ function resolveBaseUrl(configs: ExaConfigFile[]): string {
 function resolveTimeout(configs: ExaConfigFile[]): number {
 	let timeoutMs = DEFAULT_TIMEOUT_MS;
 	for (const config of configs) {
-		if (config.timeoutMs !== undefined) timeoutMs = positiveInt(config.timeoutMs, timeoutMs, 1_000);
+		if (config.timeoutSeconds !== undefined) {
+			timeoutMs = positiveInt(config.timeoutSeconds, timeoutMs / 1000, 1) * 1000;
+		}
 	}
 	return timeoutMs;
 }
@@ -298,7 +302,7 @@ export function exampleConfig(): ExaConfigFile {
 	return {
 		apiKeyEnv: "EXA_API_KEY",
 		baseUrl: DEFAULT_BASE_URL,
-		timeoutMs: DEFAULT_TIMEOUT_MS,
+		timeoutSeconds: DEFAULT_TIMEOUT_MS / 1000,
 		groups: ["core"],
 		defaults: {
 			search: { type: "auto", numResults: 8, contents: { highlights: true } },

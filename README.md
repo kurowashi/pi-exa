@@ -38,7 +38,7 @@ API キーは環境変数 `apiKeyEnv`（既定 `EXA_API_KEY`）→ `EXA_API_KEY`
 {
   "apiKeyEnv": "EXA_API_KEY",
   "baseUrl": "https://api.exa.ai",
-  "timeoutMs": 60000,
+  "timeoutSeconds": 60,
   "groups": ["core"],
   "defaults": {
     "search": { "type": "auto", "numResults": 8, "contents": { "highlights": true } },
@@ -50,9 +50,9 @@ API キーは環境変数 `apiKeyEnv`（既定 `EXA_API_KEY`）→ `EXA_API_KEY`
     "batchRequest": {}
   },
   "wait": {
-    "agent": { "enabled": true, "timeoutMs": 600000, "pollIntervalMs": 2000 },
-    "webset": { "enabled": true, "timeoutMs": 300000, "pollIntervalMs": 3000 },
-    "batch": { "enabled": true, "timeoutMs": 600000, "pollIntervalMs": 3000 }
+    "agent": { "enabled": true, "timeoutSeconds": 600, "pollIntervalSeconds": 2 },
+    "webset": { "enabled": true, "timeoutSeconds": 300, "pollIntervalSeconds": 3 },
+    "batch": { "enabled": true, "timeoutSeconds": 600, "pollIntervalSeconds": 3 }
   },
   "output": {
     "maxResults": 10,

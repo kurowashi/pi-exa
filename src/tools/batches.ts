@@ -204,7 +204,7 @@ export function registerBatchTool(pi: ExtensionAPI, runtime: Runtime): void {
 					...(compactDetails({ ...response, data }) as object),
 				});
 				if (timedOut && batchId) {
-					result.content[0].text += `\n\n[wait timed out after ${config.wait.batch.timeoutMs}ms; call exa_batch action=get batchId=${batchId} to continue]`;
+					result.content[0].text += `\n\n[wait timed out after ${config.wait.batch.timeoutMs / 1000}s; call exa_batch action=get batchId=${batchId} to continue]`;
 				}
 				return result;
 			} catch (error) {

@@ -163,7 +163,7 @@ export function registerAgentTools(pi: ExtensionAPI, runtime: Runtime): void {
 				}
 				const result = runResult(runtime, run, { request: body, notes: create.notes });
 				if (timedOut && runId) {
-					result.content[0].text += `\n\n[wait timed out after ${config.wait.agent.timeoutMs}ms; call exa_agent_get with runId=${runId} to continue polling]`;
+					result.content[0].text += `\n\n[wait timed out after ${config.wait.agent.timeoutMs / 1000}s; call exa_agent_get with runId=${runId} to continue polling]`;
 				}
 				return result;
 			} catch (error) {
@@ -209,7 +209,7 @@ export function registerAgentTools(pi: ExtensionAPI, runtime: Runtime): void {
 				}
 				const result = runResult(runtime, run);
 				if (timedOut) {
-					result.content[0].text += `\n\n[wait timed out after ${config.wait.agent.timeoutMs}ms; call exa_agent_get again with runId=${params.runId}]`;
+					result.content[0].text += `\n\n[wait timed out after ${config.wait.agent.timeoutMs / 1000}s; call exa_agent_get again with runId=${params.runId}]`;
 				}
 				return result;
 			} catch (error) {

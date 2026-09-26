@@ -389,7 +389,7 @@ async function finishWebset(
 		...(compactDetails({ ...response, data }) as object),
 	});
 	if (timedOut && websetId) {
-		result.content[0].text += `\n\n[wait timed out after ${config.wait.webset.timeoutMs}ms; call exa_websets action=get websetId=${websetId} to continue]`;
+		result.content[0].text += `\n\n[wait timed out after ${config.wait.webset.timeoutMs / 1000}s; call exa_websets action=get websetId=${websetId} to continue]`;
 	}
 	return result;
 }

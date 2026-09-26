@@ -65,16 +65,22 @@ test("loadConfigs merges global then project config when trusted", () => {
 		try {
 			fs.writeFileSync(
 				path.join(agentDir, "exa.json"),
-				JSON.stringify({ baseUrl: "https://global.test", timeoutMs: 1000 }),
+				JSON.stringify({ baseUrl: "https://global.test", timeoutSeconds: 1 }),
 			);
 			fs.writeFileSync(
 				path.join(cwd, ".pi", "exa.json"),
-				JSON.stringify({ baseUrl: "https://project.test", defaults: { search: { numResults: 3 } } }),
+				JSON.stringify({
+					baseUrl: "https://project.test",
+					defaults: { search: { numResults: 3 } },
+					wait: { agent: { timeoutSeconds: 900, pollIntervalSeconds: 3 } },
+				}),
 			);
 
 			const trusted = resolveConfig(loadConfigs(cwd, true), { knownGroups: ["core", "agent"] });
 			assert.equal(trusted.baseUrl, "https://project.test");
 			assert.equal(trusted.timeoutMs, 1000);
+			assert.equal(trusted.wait.agent.timeoutMs, 900_000);
+			assert.equal(trusted.wait.agent.pollIntervalMs, 3_000);
 			assert.equal(trusted.defaults.search["numResults"], 3);
 
 			const untrusted = resolveConfig(loadConfigs(cwd, false), { knownGroups: ["core", "agent"] });

@@ -55,7 +55,7 @@ export function describeError(error: unknown): string {
 	}
 	if (error instanceof Error) {
 		if (error.name === "TimeoutError")
-			return "Exa request timed out (narrow the request, or ask the user to raise timeoutMs in ~/.pi/agent/exa.json)";
+			return "Exa request timed out (the request timeout is `timeoutSeconds` in ~/.pi/agent/exa.json)";
 		if (error.name === "AbortError") return "Exa request was aborted";
 		return error.message;
 	}

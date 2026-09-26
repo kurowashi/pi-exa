@@ -285,20 +285,20 @@ request body, then applies the explicit tool arguments on top.`,
 Environment variables win over the file: apiKeyEnv (default EXA_API_KEY), EXA_BASE_URL.
 
 Keys:
-  apiKey       string    Literal key. Prefer env vars when possible.
-  apiKeyEnv    string    Env var that holds the key (default "EXA_API_KEY").
-  baseUrl      string    Default "https://api.exa.ai".
-  timeoutMs    number    Per-request timeout, default 60000.
-  groups       string[]  Tool groups active at session start. Default ["core"].
-                         Values: core, similar, agent, monitors, websets, webhooks,
-                         batches, raw, or the single string "all".
-  headers      object    Extra HTTP headers.
+  apiKey         string    Literal key. Prefer env vars when possible.
+  apiKeyEnv      string    Env var that holds the key (default "EXA_API_KEY").
+  baseUrl        string    Default "https://api.exa.ai".
+  timeoutSeconds number    Per-request timeout, default 60.
+  groups         string[]  Tool groups active at session start. Default ["core"].
+                           Values: core, similar, agent, monitors, websets, webhooks,
+                           batches, raw, or the single string "all".
+  headers        object    Extra HTTP headers.
   defaults.search / defaults.contents / defaults.answer / defaults.similar /
   defaults.agentRun / defaults.websetSearch / defaults.batchRequest
                          Partial request bodies merged into every call of that
                          operation. Tool arguments override these values.
   wait.agent / wait.webset / wait.batch
-                         { enabled: boolean, timeoutMs, pollIntervalMs } that
+                         { enabled: boolean, timeoutSeconds, pollIntervalSeconds } that
                          controls how the extension polls asynchronous work.
   output       object    Model-facing budget:
                          { maxResults: 10, maxCharsPerResult: 4000,
@@ -313,7 +313,7 @@ Example ~/.pi/agent/exa.json:
     "contents": { "text": { "maxCharacters": 12000 }, "maxAgeHours": 24 },
     "agentRun": { "effort": "medium" }
   },
-  "wait": { "agent": { "timeoutMs": 900000, "pollIntervalMs": 3000 } },
+  "wait": { "agent": { "timeoutSeconds": 900, "pollIntervalSeconds": 3 } },
   "output": { "maxResults": 8, "maxCharsPerResult": 6000, "maxTotalChars": 30000 }
 }`,
 	},
