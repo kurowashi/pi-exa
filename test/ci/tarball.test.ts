@@ -17,7 +17,7 @@ import { test } from "node:test";
 import { PACKAGE_ROOT } from "../helpers/loader.ts";
 
 /** npm always adds these; nothing else may appear besides src/. */
-const METADATA = ["package.json", "README.md"];
+const METADATA = ["package.json", "README.md", "LICENSE"];
 
 test("the tarball is exactly the source tree plus package metadata", () => {
 	const output = execFileSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
