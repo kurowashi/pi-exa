@@ -1,0 +1,24 @@
+{
+	"name": "pi-exa",
+	"version": "0.1.0",
+	"description": "Exa API access for Pi: curated core tools with on-demand disclosure of the full Exa API surface",
+	"keywords": [
+		"pi-package",
+		"pi",
+		"exa",
+		"search",
+		"web-search",
+		"deep-research",
+		"websets"
+	],
+	"license": "MIT",
+	"type": "module",
+	"pi": {
+		"extensions": [
+			"./src/index.ts"
+		]
+	},
+	"scripts": {
+		"test": "node --test test/*.test.ts"
+	}
+}
