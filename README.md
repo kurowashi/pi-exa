@@ -10,6 +10,14 @@ Exa API を Pi から使うための拡張です。Exa の全エンドポイン�
 ## インストール
 
 ```bash
+pi install git:github.com/kurowashi/pi-exa
+```
+
+ref を固定する場合は `pi install git:github.com/kurowashi/pi-exa@<tag|commit>`。
+
+ローカルの作業コピーを使う場合:
+
+```bash
 pi install /path/to/pi-exa
 ```
 
@@ -138,6 +146,9 @@ always-on トークン予算・import 境界)と `test/ci/`(npm pack の内容)�
 
 ローカルの git フックは [lefthook](lefthook.yml) が管理する。フックは利便性のためのもので、
 完了条件は常に `npm run verify` が通ること(CI も同じコマンドを Node 22.19 / 24 で実行する)。
+フックの有効化は `npx lefthook install` を手動で実行する(`package.json` の lifecycle script には
+置かない: `pi install git:...` は `npm install --omit=dev` を実行するため、devDependency の
+lefthook が無い状態で script が走るとインストールごと失敗する)。
 
 - `src/config.ts` — 設定の探索・マージ
 - `src/client.ts` — HTTP クライアント

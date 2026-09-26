@@ -4,8 +4,9 @@
  *
  * The expected list is computed from the files on disk and compared as a set,
  * so packing anything outside src/ (tests, configs, this test itself) fails.
- * `--ignore-scripts` keeps the `prepare` hook (lefthook) out of the output and
- * the check side-effect free.
+ * `--ignore-scripts` keeps the check side-effect free. The package ships no
+ * lifecycle scripts: git installs run `npm install --omit=dev`, where hook
+ * installation would fail because devDependencies are absent.
  */
 
 import assert from "node:assert/strict";
