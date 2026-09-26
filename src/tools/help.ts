@@ -20,8 +20,7 @@ export function registerHelpTool(pi: ExtensionAPI, runtime: Runtime): void {
 		label: "Exa Help",
 		description:
 			"Show the full Exa API reference for one topic and enable the tools it needs. Call this before using the advanced `options` argument " +
-			"or when an Exa call needs a parameter not shown in the tool schema. " +
-			`Topics: ${TOPIC_NAMES.join(", ")}.`,
+			"or when an Exa call needs a parameter not shown in the tool schema.",
 		promptSnippet: "Reveal Exa API details (and enable the matching tools) for a topic",
 		promptGuidelines: [
 			"Prefer typed tools (exa_search, exa_agent_run, exa_websets, ...) over exa_request; use exa_request only for uncovered endpoints.",
@@ -37,10 +36,7 @@ export function registerHelpTool(pi: ExtensionAPI, runtime: Runtime): void {
 						GROUP_NAMES.map((value) => Type.Literal(value)),
 						{ description: "Tool group name." },
 					),
-					{
-						description:
-							"Enable extra tool groups without reading their docs (core, similar, agent, monitors, websets, webhooks, batches, raw).",
-					},
+					{ description: "Enable extra tool groups without reading their docs." },
 				),
 			),
 		}),

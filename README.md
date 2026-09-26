@@ -82,7 +82,7 @@ API キーは環境変数 `apiKeyEnv`（既定 `EXA_API_KEY`）→ `EXA_API_KEY`
 
 | ツール | エンドポイント | 用途 |
 |---|---|---|
-| `exa_search` | `POST /search` | Web 検索。highlights（既定）/ text / summary、フィルタ、deep 系モード |
+| `exa_search` | `POST /search` | Web 検索。highlights（既定）/ text / summary / text+highlights、フィルタ、deep 系モード |
 | `exa_contents` | `POST /contents` | 既知 URL からの本文抽出・要約・サブページ取得 |
 | `exa_answer` | `POST /answer` | 引用付きの回答を 1 つ生成 |
 | `exa_help` | — | トピックの詳細リファレンスを返し、必要なツール群を有効化 |

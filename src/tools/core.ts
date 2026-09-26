@@ -76,8 +76,8 @@ function searchParams() {
 		),
 		endPublishedDate: Type.Optional(Type.String({ description: "Only pages published before this ISO 8601 date." })),
 		content: stringEnum(
-			["highlights", "text", "summary", "none"],
-			'What to return for each result. "highlights" (default) returns query-relevant excerpts; "text" returns the full page; "summary" adds an LLM summary; "none" returns metadata only. Requests for text and highlights together bill two views.',
+			["highlights", "text", "summary", "text+highlights", "none"],
+			'What to return per result: "highlights" (default unless configured) for excerpts, "text" for the full page, "summary" for an LLM summary, "text+highlights" for both (billed as two views), "none" for metadata only.',
 		),
 		options: optionsSchema(
 			'Examples: { additionalQueries: ["..."], outputSchema: {...}, systemPrompt: "...", numResults: 20, contents: { text: { maxCharacters: 8000 } }, moderation: true }. Call exa_help with topic "search" for the complete list.',
@@ -174,7 +174,7 @@ export function registerCoreTools(pi: ExtensionAPI, runtime: Runtime): void {
 			}),
 			content: stringEnum(
 				["text", "highlights", "summary", "text+highlights"],
-				'What to return for each page: "text" (default), "highlights", "summary", or both text and highlights.',
+				'What to return per page: "text" (default unless configured), "highlights", "summary", or "text+highlights" (both, billed as two views).',
 			),
 			options: optionsSchema(
 				'Examples: { text: { maxCharacters: 20000 }, maxAgeHours: 0, subpages: 5, extras: { links: 3 } }. Call exa_help with topic "contents" for the complete list.',

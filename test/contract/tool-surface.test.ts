@@ -38,8 +38,8 @@ const ALWAYS_ON = ["exa_answer", "exa_contents", "exa_help", "exa_search"];
 /**
  * Combined budget for the always-on descriptions and parameter schemas.
  *
- * Measured baseline when the budget was set: 1647 tokens
- * (search 772, contents 294, answer 197, help 384). The cap leaves about 9%
+ * Measured baseline after the description review: 1611 tokens
+ * (search 777, contents 303, answer 197, help 334). The cap leaves about 10%
  * of room for wording changes and fails a new always-on tool, which is the
  * point. Advanced tools reach the model only after exa_help activates them.
  */

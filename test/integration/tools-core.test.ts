@@ -40,6 +40,16 @@ test("exa_search honors an explicit content mode and reports client errors", asy
 		"content=none must not ask for any content mode",
 	);
 
+	h.queue(responseOf({ results: [] }));
+	await h.call("exa_search", { query: "q", content: "text+highlights" });
+	const bothRequest = h.sent[1];
+	assert.ok(bothRequest);
+	assert.deepEqual(
+		(bothRequest.body as Record<string, unknown>)["contents"],
+		{ text: true, highlights: true },
+		"content=text+highlights must ask for both views",
+	);
+
 	h.queue(new Error("upstream down"));
 	const failed = await h.call("exa_search", { query: "q" });
 	assert.match(toolText(failed), /Error: upstream down/);
