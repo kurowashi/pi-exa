@@ -163,56 +163,52 @@ test("send rejects event streams with a fix hint", async () => {
 });
 
 test("send wraps a network failure and maps timeouts and aborts", async () => {
-	const calls = stubFetch(
-		(_url, init) =>
-			new Promise((_resolve, reject) => {
-				init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
-			}),
-	);
 	const client = new ExaClient(configWith());
-	const failure = client.send({ method: "GET", path: "/search", timeoutMs: 5 });
-	await assert.rejects(failure, (error: unknown) => {
+	stubFetch(() => Promise.reject(new Error("socket reset")));
+	await assert.rejects(client.send({ method: "GET", path: "/search" }), (error: unknown) => {
+		assert.ok(error instanceof ExaApiError);
+		assert.equal(error.message, "socket reset");
+		return true;
+	});
+
+	// The reasons fetch rejects with when the deadline or the caller aborts.
+	stubFetch(() => Promise.reject(new DOMException("The operation was aborted due to timeout", "TimeoutError")));
+	await assert.rejects(client.send({ method: "GET", path: "/search" }), (error: unknown) => {
 		assert.ok(error instanceof ExaApiError);
 		assert.match(error.message, /timed out/);
 		return true;
 	});
-	assert.equal(calls.length, 1);
 
-	const controller = new AbortController();
-	const aborted = client.send({ method: "GET", path: "/search", signal: controller.signal, timeoutMs: 10_000 });
-	controller.abort();
-	await assert.rejects(aborted, (error: unknown) => {
+	stubFetch(() => Promise.reject(new DOMException("This operation was aborted", "AbortError")));
+	await assert.rejects(client.send({ method: "GET", path: "/search" }), (error: unknown) => {
 		assert.ok(error instanceof ExaApiError);
 		assert.match(error.message, /aborted/);
 		return true;
 	});
 });
 
-test("send combines signals itself when AbortSignal.any is unavailable", async () => {
-	const anySignal = AbortSignal as unknown as { any?: unknown };
-	const saved = anySignal.any;
-	anySignal.any = undefined;
-	try {
-		// The fallback path must honor an aborted signal; a live signal resolves normally.
-		stubFetch((_url, init) => {
-			if (init.signal?.aborted) return Promise.reject(init.signal.reason);
-			return jsonResponse({});
-		});
-		const controller = new AbortController();
-		const client = new ExaClient(configWith());
-		const response = await client.send({ method: "GET", path: "/search", signal: controller.signal, timeoutMs: 5_000 });
-		assert.equal(response.status, 200);
+test("send combines the caller signal with the request deadline", async () => {
+	let seen: AbortSignal | undefined;
+	stubFetch((_url, init) => {
+		seen = init.signal ?? undefined;
+		return init.signal?.aborted ? Promise.reject(init.signal.reason) : jsonResponse({});
+	});
+	const controller = new AbortController();
+	const client = new ExaClient(configWith());
+	const response = await client.send({ method: "GET", path: "/search", signal: controller.signal, timeoutMs: 5_000 });
+	assert.equal(response.status, 200);
+	assert.ok(seen);
+	assert.equal(seen.aborted, false);
+	controller.abort();
+	assert.equal(seen.aborted, true);
+	assert.equal(seen.reason, controller.signal.reason);
 
-		// The already-aborted branch on the fallback path.
-		const preAborted = new AbortController();
-		preAborted.abort();
-		await assert.rejects(
-			client.send({ method: "GET", path: "/search", signal: preAborted.signal, timeoutMs: 5_000 }),
-			(error: unknown) => error instanceof ExaApiError && /aborted|timeout/i.test(error.message),
-		);
-	} finally {
-		anySignal.any = saved;
-	}
+	const preAborted = new AbortController();
+	preAborted.abort();
+	await assert.rejects(
+		client.send({ method: "GET", path: "/search", signal: preAborted.signal, timeoutMs: 5_000 }),
+		(error: unknown) => error instanceof ExaApiError && /aborted/i.test(error.message),
+	);
 });
 
 test("describeError covers each error kind", () => {
