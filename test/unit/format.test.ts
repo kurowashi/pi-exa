@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_OUTPUT } from "../src/config.ts";
-import { formatAgentRun, formatAnswer, formatContents, formatSearch, truncate } from "../src/format.ts";
+import test from "node:test";
+import { DEFAULT_OUTPUT } from "../../src/config.ts";
+import { formatAgentRun, formatAnswer, formatContents, formatSearch, truncate } from "../../src/format.ts";
 
 const output = { ...DEFAULT_OUTPUT, maxTotalChars: 10_000 };
 
@@ -104,7 +104,9 @@ test("formatAgentRun surfaces status, output, grounding, and pending guidance", 
 			output: {
 				text: "Answer text",
 				structured: { companies: [{ name: "Acme" }] },
-				grounding: [{ field: "structured.companies[0].name", citations: [{ url: "https://acme.test" }], confidence: "high" }],
+				grounding: [
+					{ field: "structured.companies[0].name", citations: [{ url: "https://acme.test" }], confidence: "high" },
+				],
 			},
 		},
 		output,
@@ -116,7 +118,10 @@ test("formatAgentRun surfaces status, output, grounding, and pending guidance", 
 	assert.match(completed, /structured\.companies\[0\]\.name \[high\] → https:\/\/acme\.test/);
 	assert.doesNotMatch(completed, /still running/);
 
-	const running = formatAgentRun({ id: "agent_run_2", status: "running", output: { text: "", structured: null, grounding: [] } }, output);
+	const running = formatAgentRun(
+		{ id: "agent_run_2", status: "running", output: { text: "", structured: null, grounding: [] } },
+		output,
+	);
 	assert.match(running, /still running\. Call exa_agent_get with runId=agent_run_2/);
 });
 

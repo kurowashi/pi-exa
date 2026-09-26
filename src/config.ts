@@ -42,7 +42,7 @@ export const DEFAULT_WAIT: WaitSettings = {
 };
 
 export function agentDir(): string {
-	const override = process.env.PI_CODING_AGENT_DIR?.trim();
+	const override = process.env["PI_CODING_AGENT_DIR"]?.trim();
 	return override && override.length > 0 ? override : path.join(os.homedir(), ".pi", "agent");
 }
 
@@ -130,14 +130,14 @@ function mergeOutput(configs: ExaConfigFile[]): OutputSettings {
 	const merged: OutputSettings = { ...DEFAULT_OUTPUT };
 	for (const config of configs) {
 		const output = objectOrEmpty(config.output);
-		if (output.maxResults !== undefined) merged.maxResults = positiveInt(output.maxResults, merged.maxResults, 1);
-		if (output.maxCharsPerResult !== undefined) {
-			merged.maxCharsPerResult = positiveInt(output.maxCharsPerResult, merged.maxCharsPerResult, 200);
+		if (output["maxResults"] !== undefined) merged.maxResults = positiveInt(output["maxResults"], merged.maxResults, 1);
+		if (output["maxCharsPerResult"] !== undefined) {
+			merged.maxCharsPerResult = positiveInt(output["maxCharsPerResult"], merged.maxCharsPerResult, 200);
 		}
-		if (output.maxTotalChars !== undefined) {
-			merged.maxTotalChars = positiveInt(output.maxTotalChars, merged.maxTotalChars, 1_000);
+		if (output["maxTotalChars"] !== undefined) {
+			merged.maxTotalChars = positiveInt(output["maxTotalChars"], merged.maxTotalChars, 1_000);
 		}
-		if (typeof output.includeCost === "boolean") merged.includeCost = output.includeCost;
+		if (typeof output["includeCost"] === "boolean") merged.includeCost = output["includeCost"];
 	}
 	return merged;
 }
@@ -146,10 +146,10 @@ function mergeWait(configs: ExaConfigFile[], key: "agent" | "webset" | "batch"):
 	const merged: WaitSettings = { ...DEFAULT_WAIT };
 	for (const config of configs) {
 		const wait = objectOrEmpty(objectOrEmpty(config.wait)[key]);
-		if (typeof wait.enabled === "boolean") merged.enabled = wait.enabled;
-		if (wait.timeoutMs !== undefined) merged.timeoutMs = positiveInt(wait.timeoutMs, merged.timeoutMs, 1_000);
-		if (wait.pollIntervalMs !== undefined) {
-			merged.pollIntervalMs = positiveInt(wait.pollIntervalMs, merged.pollIntervalMs, 250);
+		if (typeof wait["enabled"] === "boolean") merged.enabled = wait["enabled"];
+		if (wait["timeoutMs"] !== undefined) merged.timeoutMs = positiveInt(wait["timeoutMs"], merged.timeoutMs, 1_000);
+		if (wait["pollIntervalMs"] !== undefined) {
+			merged.pollIntervalMs = positiveInt(wait["pollIntervalMs"], merged.pollIntervalMs, 250);
 		}
 	}
 	return merged;
@@ -176,26 +176,93 @@ export function resolveApiKey(configs: ExaConfigFile[]): { apiKey?: string; sour
 	return { warning: `no Exa API key found: set ${wanted} or add {"apiKey": "..."} to the config` };
 }
 
-function mergeGroups(configs: ExaConfigFile[], warnings: string[], known: string[]): string[] {
-	let value: unknown;
-	for (let index = configs.length - 1; index >= 0; index -= 1) {
-		if (configs[index]?.groups !== undefined) value = configs[index]?.groups;
+/** One config entry to a group name, or undefined with a warning. */
+function normalizeGroup(entry: unknown, known: string[], warnings: string[]): string | undefined {
+	if (typeof entry !== "string") return undefined;
+	const name = entry.trim().toLowerCase();
+	if (!name) return undefined;
+	if (!known.includes(name)) {
+		warnings.push(
+			`unknown tool group "${entry}" (known: core, similar, agent, monitors, websets, webhooks, batches, raw)`,
+		);
+		return undefined;
 	}
-	if (value === "all") return ["all"];
-	if (!Array.isArray(value)) return ["core"];
-	if (value.length === 0) return ["core"];
+	return name;
+}
+
+function validGroups(value: unknown, known: string[], warnings: string[]): string[] {
+	if (!Array.isArray(value)) return [];
 	const groups: string[] = [];
 	for (const entry of value) {
-		if (typeof entry !== "string") continue;
-		const name = entry.trim().toLowerCase();
-		if (!name) continue;
-		if (!known.includes(name)) {
-			warnings.push(`unknown tool group "${entry}" (known: core, similar, agent, monitors, websets, webhooks, batches, raw)`);
-			continue;
-		}
-		if (!groups.includes(name)) groups.push(name);
+		const name = normalizeGroup(entry, known, warnings);
+		if (name !== undefined && !groups.includes(name)) groups.push(name);
 	}
+	return groups;
+}
+
+function mergeGroups(configs: ExaConfigFile[], warnings: string[], known: string[]): string[] {
+	let value: unknown;
+	for (const config of configs) {
+		if (config.groups !== undefined) value = config.groups;
+	}
+	if (value === "all") return ["all"];
+	const groups = validGroups(value, known, warnings);
 	return groups.length > 0 ? groups : ["core"];
+}
+
+/** Environment first, then the nearest config file that sets a base URL. */
+function resolveBaseUrl(configs: ExaConfigFile[]): string {
+	const fromEnv = stringSetting(process.env["EXA_BASE_URL"]);
+	if (fromEnv) return fromEnv;
+	for (let index = configs.length - 1; index >= 0; index -= 1) {
+		const value = stringSetting(configs[index]?.baseUrl);
+		if (value) return value;
+	}
+	return DEFAULT_BASE_URL;
+}
+
+function resolveTimeout(configs: ExaConfigFile[]): number {
+	let timeoutMs = DEFAULT_TIMEOUT_MS;
+	for (const config of configs) {
+		if (config.timeoutMs !== undefined) timeoutMs = positiveInt(config.timeoutMs, timeoutMs, 1_000);
+	}
+	return timeoutMs;
+}
+
+function resolveHeaders(configs: ExaConfigFile[]): Record<string, string> {
+	const headers: Record<string, string> = {};
+	for (const config of configs) {
+		if (!isJsonObject(config.headers)) continue;
+		for (const [key, value] of Object.entries(config.headers)) {
+			if (typeof value === "string") headers[key] = value;
+		}
+	}
+	return headers;
+}
+
+/** Merge each tool's request-body defaults nearest-last. */
+function resolveDefaults(configs: ExaConfigFile[]): ResolvedConfig["defaults"] {
+	const first = configs[0]?.defaults;
+	const defaults = {
+		search: objectOrEmpty(first?.search),
+		contents: objectOrEmpty(first?.contents),
+		answer: objectOrEmpty(first?.answer),
+		similar: objectOrEmpty(first?.similar),
+		agentRun: objectOrEmpty(first?.agentRun),
+		websetSearch: objectOrEmpty(first?.websetSearch),
+		batchRequest: objectOrEmpty(first?.batchRequest),
+	};
+	for (let index = 1; index < configs.length; index += 1) {
+		const next = configs[index]?.defaults;
+		defaults.search = deepMerge(defaults.search, objectOrEmpty(next?.search));
+		defaults.contents = deepMerge(defaults.contents, objectOrEmpty(next?.contents));
+		defaults.answer = deepMerge(defaults.answer, objectOrEmpty(next?.answer));
+		defaults.similar = deepMerge(defaults.similar, objectOrEmpty(next?.similar));
+		defaults.agentRun = deepMerge(defaults.agentRun, objectOrEmpty(next?.agentRun));
+		defaults.websetSearch = deepMerge(defaults.websetSearch, objectOrEmpty(next?.websetSearch));
+		defaults.batchRequest = deepMerge(defaults.batchRequest, objectOrEmpty(next?.batchRequest));
+	}
+	return defaults;
 }
 
 export interface ResolveOptions {
@@ -209,51 +276,14 @@ export function resolveConfig(loaded: LoadedConfigs, options: ResolveOptions): R
 	const credential = resolveApiKey(configs);
 	if (credential.warning) warnings.push(credential.warning);
 
-	let baseUrl = stringSetting(process.env.EXA_BASE_URL);
-	for (let index = configs.length - 1; index >= 0 && !baseUrl; index -= 1) {
-		baseUrl = stringSetting(configs[index]?.baseUrl);
-	}
-
-	let timeoutMs = DEFAULT_TIMEOUT_MS;
-	for (const config of configs) {
-		if (config.timeoutMs !== undefined) timeoutMs = positiveInt(config.timeoutMs, timeoutMs, 1_000);
-	}
-
-	const headers: Record<string, string> = {};
-	for (const config of configs) {
-		if (!isJsonObject(config.headers)) continue;
-		for (const [key, value] of Object.entries(config.headers)) {
-			if (typeof value === "string") headers[key] = value;
-		}
-	}
-
-	const defaults = {
-		search: objectOrEmpty(configs[0]?.defaults?.search),
-		contents: objectOrEmpty(configs[0]?.defaults?.contents),
-		answer: objectOrEmpty(configs[0]?.defaults?.answer),
-		similar: objectOrEmpty(configs[0]?.defaults?.similar),
-		agentRun: objectOrEmpty(configs[0]?.defaults?.agentRun),
-		websetSearch: objectOrEmpty(configs[0]?.defaults?.websetSearch),
-		batchRequest: objectOrEmpty(configs[0]?.defaults?.batchRequest),
-	};
-	for (let index = 1; index < configs.length; index += 1) {
-		defaults.search = deepMerge(defaults.search, objectOrEmpty(configs[index]?.defaults?.search));
-		defaults.contents = deepMerge(defaults.contents, objectOrEmpty(configs[index]?.defaults?.contents));
-		defaults.answer = deepMerge(defaults.answer, objectOrEmpty(configs[index]?.defaults?.answer));
-		defaults.similar = deepMerge(defaults.similar, objectOrEmpty(configs[index]?.defaults?.similar));
-		defaults.agentRun = deepMerge(defaults.agentRun, objectOrEmpty(configs[index]?.defaults?.agentRun));
-		defaults.websetSearch = deepMerge(defaults.websetSearch, objectOrEmpty(configs[index]?.defaults?.websetSearch));
-		defaults.batchRequest = deepMerge(defaults.batchRequest, objectOrEmpty(configs[index]?.defaults?.batchRequest));
-	}
-
 	return {
 		apiKey: credential.apiKey,
 		apiKeySource: credential.source,
-		baseUrl: (baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ""),
-		timeoutMs,
+		baseUrl: resolveBaseUrl(configs).replace(/\/+$/, ""),
+		timeoutMs: resolveTimeout(configs),
 		groups: mergeGroups(configs, warnings, options.knownGroups),
-		headers,
-		defaults,
+		headers: resolveHeaders(configs),
+		defaults: resolveDefaults(configs),
 		wait: {
 			agent: mergeWait(configs, "agent"),
 			webset: mergeWait(configs, "webset"),

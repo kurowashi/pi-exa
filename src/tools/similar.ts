@@ -2,11 +2,21 @@
  * exa_similar - POST /findSimilar.
  */
 
-import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { formatSearch, withNotes } from "../format.ts";
 import { isJsonObject } from "../types.ts";
-import { applyContentMode, buildBody, compactDetails, errorText, hasContentMode, optionsSchema, withContentMode, type Runtime, textResult } from "./common.ts";
+import {
+	applyContentMode,
+	buildBody,
+	compactDetails,
+	errorText,
+	hasContentMode,
+	optionsSchema,
+	type Runtime,
+	textResult,
+	withContentMode,
+} from "./common.ts";
 
 export function registerSimilarTool(pi: ExtensionAPI, runtime: Runtime): void {
 	pi.registerTool({
@@ -22,7 +32,8 @@ export function registerSimilarTool(pi: ExtensionAPI, runtime: Runtime): void {
 				Type.Integer({
 					minimum: 1,
 					maximum: 100,
-					description: "Number of results (default: from the config, 10 at the API). Results above 10 are billed extra.",
+					description:
+						"Number of results (default: from the config, 10 at the API). Results above 10 are billed extra.",
 				}),
 			),
 			content: Type.Optional(
@@ -31,7 +42,9 @@ export function registerSimilarTool(pi: ExtensionAPI, runtime: Runtime): void {
 					{ description: 'What to return per result: "highlights" (default), "text", "summary", or "none".' },
 				),
 			),
-			includeDomains: Type.Optional(Type.Array(Type.String(), { description: "Restrict results to these domains or paths." })),
+			includeDomains: Type.Optional(
+				Type.Array(Type.String(), { description: "Restrict results to these domains or paths." }),
+			),
 			excludeDomains: Type.Optional(Type.Array(Type.String(), { description: "Exclude these domains or paths." })),
 			options: optionsSchema(
 				'Examples: { excludeSourceDomain: true, category: "publication", maxAgeHours: 0 }. Call exa_help with topic "similar" for the complete list.',
@@ -58,7 +71,7 @@ export function registerSimilarTool(pi: ExtensionAPI, runtime: Runtime): void {
 					signal: signal ?? ctx.signal,
 				});
 				const data = response.data;
-				const results = isJsonObject(data) && Array.isArray(data.results) ? data.results : [];
+				const results = isJsonObject(data) && Array.isArray(data["results"]) ? data["results"] : [];
 				const text = withNotes(
 					formatSearch(data, config.output, {
 						query: `similar to ${params.url}`,

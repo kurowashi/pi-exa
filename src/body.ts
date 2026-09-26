@@ -17,16 +17,12 @@ export function jsonObject(value: unknown): JsonObject | undefined {
 export function queryFrom(options: unknown): Record<string, unknown> {
 	const object = jsonObject(options);
 	if (!object) return {};
-	const query = jsonObject(object.query);
+	const query = jsonObject(object["query"]);
 	return query ? { ...query } : {};
 }
 
 /** Build a request body from config defaults, curated fields, and free-form options. */
-export function buildBody(
-	defaults: JsonObject,
-	curated: Record<string, unknown>,
-	options: unknown,
-): JsonObject {
+export function buildBody(defaults: JsonObject, curated: Record<string, unknown>, options: unknown): JsonObject {
 	let body = deepMerge({}, defaults);
 	for (const [key, value] of Object.entries(curated)) {
 		if (value !== undefined) body[key] = value;
@@ -51,7 +47,7 @@ export type ContentMode = "highlights" | "text" | "summary" | "text+highlights" 
  * style (top-level keys).
  */
 export function applyContentMode(body: JsonObject, mode: ContentMode, nested = true): void {
-	const contents = nested && isJsonObject(body.contents) ? { ...body.contents } : {};
+	const contents = nested && isJsonObject(body["contents"]) ? { ...body["contents"] } : {};
 	const target: JsonObject = nested ? contents : body;
 	/** A same-key setting (maxCharacters, ...) survives: the mode must not flatten it to `true`. */
 	const existing = { ...target };
@@ -60,24 +56,24 @@ export function applyContentMode(body: JsonObject, mode: ContentMode, nested = t
 	for (const key of CONTENT_KEYS) delete target[key];
 	switch (mode) {
 		case "highlights":
-			target.highlights = kept(existing.highlights, true);
+			target["highlights"] = kept(existing["highlights"], true);
 			break;
 		case "text":
-			target.text = kept(existing.text, true);
+			target["text"] = kept(existing["text"], true);
 			break;
 		case "summary":
-			target.summary = kept(existing.summary, {});
+			target["summary"] = kept(existing["summary"], {});
 			break;
 		case "text+highlights":
-			target.text = kept(existing.text, true);
-			target.highlights = kept(existing.highlights, true);
+			target["text"] = kept(existing["text"], true);
+			target["highlights"] = kept(existing["highlights"], true);
 			break;
 		case "none":
 			break;
 	}
 	if (nested) {
-		if (Object.keys(contents).length > 0) body.contents = contents;
-		else delete body.contents;
+		if (Object.keys(contents).length > 0) body["contents"] = contents;
+		else delete body["contents"];
 	}
 }
 
@@ -94,7 +90,9 @@ export function withContentMode(defaults: JsonObject, mode: ContentMode | undefi
 /** True when the body already asks for some content mode (from config defaults). */
 export function hasContentMode(body: JsonObject, nested = true): boolean {
 	if (nested) {
-		return isJsonObject(body.contents) && CONTENT_KEYS.some((key) => (body.contents as JsonObject)[key] !== undefined);
+		return (
+			isJsonObject(body["contents"]) && CONTENT_KEYS.some((key) => (body["contents"] as JsonObject)[key] !== undefined)
+		);
 	}
 	return CONTENT_KEYS.some((key) => body[key] !== undefined);
 }

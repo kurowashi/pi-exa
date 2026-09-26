@@ -2,20 +2,21 @@
  * Core tools: the small always-on surface (search, contents, answer).
  */
 
-import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { formatAnswer, formatContents, formatSearch, withNotes } from "../format.ts";
-import { isJsonObject } from "../types.ts";
+import { isJsonObject, type JsonObject, type ResolvedConfig } from "../types.ts";
 import {
 	applyContentMode,
 	buildBody,
+	type ContentMode,
 	compactDetails,
 	errorText,
 	hasContentMode,
 	optionsSchema,
-	withContentMode,
 	type Runtime,
 	textResult,
+	withContentMode,
 } from "./common.ts";
 
 const SEARCH_TYPES = ["instant", "fast", "auto", "deep-lite", "deep", "deep-reasoning"] as const;
@@ -54,7 +55,8 @@ function searchParams() {
 			Type.Integer({
 				minimum: 1,
 				maximum: 100,
-				description: "Number of results to return (default: from the config, 10 at the API). Results above 10 are billed extra.",
+				description:
+					"Number of results to return (default: from the config, 10 at the API). Results above 10 are billed extra.",
 			}),
 		),
 		category: stringEnum(
@@ -62,7 +64,9 @@ function searchParams() {
 			"Focus the search on a content category. Some categories only support a limited set of filters.",
 		),
 		includeDomains: Type.Optional(
-			Type.Array(Type.String(), { description: 'Restrict results to these domains or paths, e.g. ["arxiv.org", "exa.ai/blog"].' }),
+			Type.Array(Type.String(), {
+				description: 'Restrict results to these domains or paths, e.g. ["arxiv.org", "exa.ai/blog"].',
+			}),
 		),
 		excludeDomains: Type.Optional(
 			Type.Array(Type.String(), { description: "Exclude results from these domains or paths." }),
@@ -70,9 +74,7 @@ function searchParams() {
 		startPublishedDate: Type.Optional(
 			Type.String({ description: "Only pages published after this ISO 8601 date, e.g. 2025-01-01." }),
 		),
-		endPublishedDate: Type.Optional(
-			Type.String({ description: "Only pages published before this ISO 8601 date." }),
-		),
+		endPublishedDate: Type.Optional(Type.String({ description: "Only pages published before this ISO 8601 date." })),
 		content: stringEnum(
 			["highlights", "text", "summary", "none"],
 			'What to return for each result. "highlights" (default) returns query-relevant excerpts; "text" returns the full page; "summary" adds an LLM summary; "none" returns metadata only. Requests for text and highlights together bill two views.',
@@ -81,6 +83,39 @@ function searchParams() {
 			'Examples: { additionalQueries: ["..."], outputSchema: {...}, systemPrompt: "...", numResults: 20, contents: { text: { maxCharacters: 8000 } }, moderation: true }. Call exa_help with topic "search" for the complete list.',
 		),
 	};
+}
+
+/** The /search body: config defaults, curated fields, then the free options bag. */
+function searchBody(config: ResolvedConfig, params: SearchArgs): JsonObject {
+	const body = buildBody(
+		withContentMode(config.defaults.search, params.content),
+		{
+			query: params.query,
+			type: params.type,
+			numResults: params.numResults,
+			category: params.category,
+			includeDomains: params.includeDomains,
+			excludeDomains: params.excludeDomains,
+			startPublishedDate: params.startPublishedDate,
+			endPublishedDate: params.endPublishedDate,
+		},
+		params.options,
+	);
+	if (!params.content && !hasContentMode(body)) applyContentMode(body, "highlights");
+	return body;
+}
+
+interface SearchArgs {
+	query: string;
+	type?: string | undefined;
+	numResults?: number | undefined;
+	category?: string | undefined;
+	includeDomains?: string[] | undefined;
+	excludeDomains?: string[] | undefined;
+	startPublishedDate?: string | undefined;
+	endPublishedDate?: string | undefined;
+	content?: ContentMode | undefined;
+	options?: unknown;
 }
 
 export function registerCoreTools(pi: ExtensionAPI, runtime: Runtime): void {
@@ -93,34 +128,20 @@ export function registerCoreTools(pi: ExtensionAPI, runtime: Runtime): void {
 			'Call exa_help with topic "search" before using the advanced `options` argument or deep-research modes. ' +
 			'For structured multi-source research or list building, prefer exa_agent_run (exa_help topic "agent").',
 		promptSnippet: "Search the web with Exa and get page contents (highlights, text, or summary)",
-		promptGuidelines: [
-			"Use exa_search instead of guessing web content; cite the returned URLs in the answer.",
-		],
+		promptGuidelines: ["Use exa_search instead of guessing web content; cite the returned URLs in the answer."],
 		parameters: Type.Object(searchParams()),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			try {
 				const config = runtime.config();
-				const body = buildBody(
-					withContentMode(config.defaults.search, params.content),
-					{
-						query: params.query,
-						type: params.type,
-						numResults: params.numResults,
-						category: params.category,
-						includeDomains: params.includeDomains,
-						excludeDomains: params.excludeDomains,
-						startPublishedDate: params.startPublishedDate,
-						endPublishedDate: params.endPublishedDate,
-					},
-					params.options,
-				);
-				if (!params.content && !hasContentMode(body)) applyContentMode(body, "highlights");
+				const body = searchBody(config, params);
 
-				const response = await runtime.client().send({ method: "POST", path: "/search", body, signal: signal ?? ctx.signal });
+				const response = await runtime
+					.client()
+					.send({ method: "POST", path: "/search", body, signal: signal ?? ctx.signal });
 				const data = response.data;
-				const results = isJsonObject(data) && Array.isArray(data.results) ? data.results : [];
+				const results = isJsonObject(data) && Array.isArray(data["results"]) ? data["results"] : [];
 				const resolvedType =
-					(isJsonObject(data) && (data.resolvedSearchType || data.searchType)) || body.type || "auto";
+					(isJsonObject(data) && (data["resolvedSearchType"] || data["searchType"])) || body["type"] || "auto";
 				const text = withNotes(
 					formatSearch(data, config.output, {
 						query: params.query,
@@ -168,9 +189,15 @@ export function registerCoreTools(pi: ExtensionAPI, runtime: Runtime): void {
 					params.options,
 				);
 				if (!params.content && !hasContentMode(body, false)) applyContentMode(body, "text", false);
-				const response = await runtime.client().send({ method: "POST", path: "/contents", body, signal: signal ?? ctx.signal });
+				const response = await runtime
+					.client()
+					.send({ method: "POST", path: "/contents", body, signal: signal ?? ctx.signal });
 				const text = withNotes(formatContents(response.data, config.output), response.notes);
-				return textResult(text, { tool: "exa_contents", request: { path: "/contents", urls: body.urls }, ...(compactDetails(response) as object) });
+				return textResult(text, {
+					tool: "exa_contents",
+					request: { path: "/contents", urls: body["urls"] },
+					...(compactDetails(response) as object),
+				});
 			} catch (error) {
 				return textResult(errorText(error), { tool: "exa_contents", error: true });
 			}
@@ -195,7 +222,9 @@ export function registerCoreTools(pi: ExtensionAPI, runtime: Runtime): void {
 			try {
 				const config = runtime.config();
 				const body = buildBody(config.defaults.answer, { query: params.query }, params.options);
-				const response = await runtime.client().send({ method: "POST", path: "/answer", body, signal: signal ?? ctx.signal });
+				const response = await runtime
+					.client()
+					.send({ method: "POST", path: "/answer", body, signal: signal ?? ctx.signal });
 				const text = withNotes(formatAnswer(response.data, config.output, params.query), response.notes);
 				return textResult(text, { tool: "exa_answer", request: body, ...(compactDetails(response) as object) });
 			} catch (error) {

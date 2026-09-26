@@ -6,8 +6,8 @@
  * they are actually requested.
  */
 
-import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { helpText, TOPICS, topicNames } from "../reference.ts";
 import { GROUP_NAMES, signaturesForTools, toolsInGroup } from "../registry.ts";
 import { errorText, type Runtime, textResult } from "./common.ts";
@@ -33,7 +33,10 @@ export function registerHelpTool(pi: ExtensionAPI, runtime: Runtime): void {
 			),
 			activate: Type.Optional(
 				Type.Array(
-					Type.Union(GROUP_NAMES.map((value) => Type.Literal(value)), { description: "Tool group name." }),
+					Type.Union(
+						GROUP_NAMES.map((value) => Type.Literal(value)),
+						{ description: "Tool group name." },
+					),
 					{
 						description:
 							"Enable extra tool groups without reading their docs (core, similar, agent, monitors, websets, webhooks, batches, raw).",

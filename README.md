@@ -126,8 +126,18 @@ exa_search({ query: "...", options: {
 ## 開発
 
 ```bash
-npm test        # node --test（依存ゼロ、Node の type stripping で実行）
+npm install          # 依存(すべて devDependency。実行時依存はゼロ)
+npm run verify       # 完了条件: biome + tsc + 全テスト + カバレッジ閾値
+npm test             # 全テスト
 ```
+
+`npm run verify` の内訳は `package.json` にある。契約テストは `test/contract/`(登録ツール面・
+always-on トークン予算・import 境界)と `test/ci/`(npm pack の内容)にあり、`src` を Pi の
+ローダー経由で読み込んで検証する。カバレッジ閾値は `test/unit/` と `test/integration/` の
+実行で計測する。
+
+ローカルの git フックは [lefthook](lefthook.yml) が管理する。フックは利便性のためのもので、
+完了条件は常に `npm run verify` が通ること(CI も同じコマンドを Node 22.19 / 24 で実行する)。
 
 - `src/config.ts` — 設定の探索・マージ
 - `src/client.ts` — HTTP クライアント

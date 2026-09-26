@@ -1,5 +1,5 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import {
 	ENDPOINTS,
 	helpText,
@@ -8,8 +8,8 @@ import {
 	normalizeRequestPath,
 	TOPICS,
 	topicNames,
-} from "../src/reference.ts";
-import { GROUP_NAMES, MANAGED_TOOLS, HELP_TOOL, TOOL_SIGNATURES, toolsForGroups } from "../src/registry.ts";
+} from "../../src/reference.ts";
+import { GROUP_NAMES, HELP_TOOL, MANAGED_TOOLS, TOOL_SIGNATURES, toolsForGroups } from "../../src/registry.ts";
 
 test("every endpoint is documented by a topic", () => {
 	for (const endpoint of ENDPOINTS) {

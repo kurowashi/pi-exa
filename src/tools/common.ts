@@ -3,21 +3,21 @@
  * and compact detail storage.
  */
 
-import { Type } from "typebox";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
-import { describeError } from "../client.ts";
+import { Type } from "typebox";
 import type { ExaClient, ExaResponse } from "../client.ts";
+import { describeError } from "../client.ts";
 import type { JsonObject, ResolvedConfig } from "../types.ts";
 import { isJsonObject } from "../types.ts";
 
 export {
 	applyContentMode,
 	buildBody,
+	type ContentMode,
 	hasContentMode,
 	jsonObject,
 	queryFrom,
 	withContentMode,
-	type ContentMode,
 } from "../body.ts";
 
 export interface Runtime {
@@ -30,7 +30,7 @@ export interface Runtime {
 }
 
 export interface ToolResult {
-	content: { type: "text"; text: string }[];
+	content: [{ type: "text"; text: string }];
 	details: unknown;
 }
 
@@ -54,10 +54,10 @@ export function optionsSchema(hint: string) {
 export interface PollOptions<T> {
 	timeoutMs: number;
 	intervalMs: number;
-	signal?: AbortSignal;
+	signal?: AbortSignal | undefined;
 	isDone: (value: T) => boolean;
 	poll: () => Promise<T>;
-	onProgress?: (value: T) => void;
+	onProgress?: ((value: T) => void) | undefined;
 }
 
 export interface PollOutcome<T> {
@@ -77,7 +77,10 @@ export async function pollUntil<T>(options: PollOptions<T>): Promise<PollOutcome
 			timedOut = true;
 			break;
 		}
-		await sleep(Math.min(options.intervalMs, Math.max(0, options.timeoutMs - (Date.now() - startedAt))), options.signal);
+		await sleep(
+			Math.min(options.intervalMs, Math.max(0, options.timeoutMs - (Date.now() - startedAt))),
+			options.signal,
+		);
 		if (options.signal?.aborted) throw options.signal.reason;
 		value = await options.poll();
 		polls += 1;
@@ -111,6 +114,22 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 	});
 }
 
+function responseMeta(response: ExaResponse): JsonObject {
+	return {
+		status: response.status,
+		requestId: response.requestId,
+		notes: response.notes.length > 0 ? response.notes : undefined,
+	};
+}
+
+function summarizeResults(results: unknown[]): unknown[] {
+	return results.map((result) =>
+		isJsonObject(result)
+			? { title: result["title"], url: result["url"], id: result["id"], publishedDate: result["publishedDate"] }
+			: result,
+	);
+}
+
 /** Keep tool details small enough that the session file does not balloon. */
 export function compactDetails(response: ExaResponse, limit = 80_000): unknown {
 	const data = response.data;
@@ -120,30 +139,18 @@ export function compactDetails(response: ExaResponse, limit = 80_000): unknown {
 	} catch {
 		serialized = undefined;
 	}
-	const meta = {
-		status: response.status,
-		requestId: response.requestId,
-		notes: response.notes.length > 0 ? response.notes : undefined,
-	};
+	const meta = responseMeta(response);
 	if (serialized !== undefined && serialized.length <= limit) {
 		return { ...meta, response: data };
 	}
-	if (isJsonObject(data)) {
-		const summary: JsonObject = { ...meta, truncated: true };
-		if (typeof data.requestId === "string") summary.requestId = data.requestId;
-		if (Array.isArray(data.results)) {
-			summary.results = data.results.map((result) =>
-				isJsonObject(result)
-					? { title: result.title, url: result.url, id: result.id, publishedDate: result.publishedDate }
-					: result,
-			);
-		}
-		if (isJsonObject(data.costDollars)) summary.costDollars = data.costDollars;
-		if (typeof data.id === "string") summary.id = data.id;
-		if (typeof data.status === "string") summary.status = data.status;
-		return summary;
-	}
-	return meta;
+	if (!isJsonObject(data)) return meta;
+	const summary: JsonObject = { ...meta, truncated: true };
+	if (typeof data["requestId"] === "string") summary["requestId"] = data["requestId"];
+	if (Array.isArray(data["results"])) summary["results"] = summarizeResults(data["results"]);
+	if (isJsonObject(data["costDollars"])) summary["costDollars"] = data["costDollars"];
+	if (typeof data["id"] === "string") summary["id"] = data["id"];
+	if (typeof data["status"] === "string") summary["status"] = data["status"];
+	return summary;
 }
 
 /** Guard for action-dispatch tools: every handled action assigns a response. */

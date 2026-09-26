@@ -45,8 +45,7 @@ export const TOOL_SIGNATURES: Record<string, string> = {
 		"exa_search { query, type?, numResults?, category?, includeDomains?, excludeDomains?, startPublishedDate?, endPublishedDate?, content?, options? }",
 	exa_contents: "exa_contents { urls, content?, options? }",
 	exa_answer: "exa_answer { query, options? }",
-	exa_similar:
-		"exa_similar { url, numResults?, content?, includeDomains?, excludeDomains?, options? }",
+	exa_similar: "exa_similar { url, numResults?, content?, includeDomains?, excludeDomains?, options? }",
 	exa_agent_run: "exa_agent_run { query, effort?, outputSchema?, wait?, options? }",
 	exa_agent_get: "exa_agent_get { runId, wait?, options? }",
 	exa_agent_control:

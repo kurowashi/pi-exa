@@ -1,15 +1,9 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import {
-	deepMerge,
-	DEFAULT_OUTPUT,
-	loadConfigs,
-	resolveApiKey,
-	resolveConfig,
-} from "../src/config.ts";
+import test from "node:test";
+import { DEFAULT_OUTPUT, deepMerge, loadConfigs, resolveApiKey, resolveConfig } from "../../src/config.ts";
 
 function withTempDir<T>(fn: (dir: string) => T): T {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-exa-config-"));
@@ -42,18 +36,18 @@ test("deepMerge merges objects recursively and replaces arrays", () => {
 
 test("resolveApiKey prefers the configured env var, then EXA_API_KEY, then a literal key", () => {
 	withEnv(["EXA_API_KEY", "MY_EXA_KEY"], () => {
-		process.env.EXA_API_KEY = "from-default-env";
-		process.env.MY_EXA_KEY = "from-configured-env";
+		process.env["EXA_API_KEY"] = "from-default-env";
+		process.env["MY_EXA_KEY"] = "from-configured-env";
 		assert.deepEqual(resolveApiKey([{ apiKeyEnv: "MY_EXA_KEY", apiKey: "literal" }]), {
 			apiKey: "from-configured-env",
 			source: "env:MY_EXA_KEY",
 		});
-		delete process.env.MY_EXA_KEY;
+		delete process.env["MY_EXA_KEY"];
 		assert.deepEqual(resolveApiKey([{ apiKeyEnv: "MY_EXA_KEY", apiKey: "literal" }]), {
 			apiKey: "from-default-env",
 			source: "env:EXA_API_KEY",
 		});
-		delete process.env.EXA_API_KEY;
+		delete process.env["EXA_API_KEY"];
 		assert.deepEqual(resolveApiKey([{ apiKey: "literal" }]), { apiKey: "literal", source: "config" });
 		const missing = resolveApiKey([{}]);
 		assert.equal(missing.apiKey, undefined);
@@ -67,9 +61,12 @@ test("loadConfigs merges global then project config when trusted", () => {
 		const cwd = path.join(dir, "project");
 		fs.mkdirSync(agentDir, { recursive: true });
 		fs.mkdirSync(path.join(cwd, ".pi"), { recursive: true });
-		process.env.PI_CODING_AGENT_DIR = agentDir;
+		process.env["PI_CODING_AGENT_DIR"] = agentDir;
 		try {
-			fs.writeFileSync(path.join(agentDir, "exa.json"), JSON.stringify({ baseUrl: "https://global.test", timeoutMs: 1000 }));
+			fs.writeFileSync(
+				path.join(agentDir, "exa.json"),
+				JSON.stringify({ baseUrl: "https://global.test", timeoutMs: 1000 }),
+			);
 			fs.writeFileSync(
 				path.join(cwd, ".pi", "exa.json"),
 				JSON.stringify({ baseUrl: "https://project.test", defaults: { search: { numResults: 3 } } }),
@@ -78,14 +75,14 @@ test("loadConfigs merges global then project config when trusted", () => {
 			const trusted = resolveConfig(loadConfigs(cwd, true), { knownGroups: ["core", "agent"] });
 			assert.equal(trusted.baseUrl, "https://project.test");
 			assert.equal(trusted.timeoutMs, 1000);
-			assert.equal(trusted.defaults.search.numResults, 3);
+			assert.equal(trusted.defaults.search["numResults"], 3);
 
 			const untrusted = resolveConfig(loadConfigs(cwd, false), { knownGroups: ["core", "agent"] });
 			assert.equal(untrusted.baseUrl, "https://global.test");
 			assert.deepEqual(untrusted.defaults.search, {});
 			assert.ok(untrusted.groups.includes("core"), "warnings do not break defaults");
 		} finally {
-			delete process.env.PI_CODING_AGENT_DIR;
+			delete process.env["PI_CODING_AGENT_DIR"];
 		}
 	});
 });
@@ -95,10 +92,7 @@ test("resolveConfig validates groups and merges output settings", () => {
 		{
 			globalFile: "/nonexistent/exa.json",
 			projectFile: "/nonexistent/.pi/exa.json",
-			configs: [
-				{ groups: ["core", "nope"], output: { maxResults: 3 } },
-				{ output: { maxCharsPerResult: 900 } },
-			],
+			configs: [{ groups: ["core", "nope"], output: { maxResults: 3 } }, { output: { maxCharsPerResult: 900 } }],
 			warnings: [],
 		},
 		{ knownGroups: ["core", "agent"] },

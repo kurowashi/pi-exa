@@ -3,8 +3,9 @@
  * structured row enrichment.
  */
 
-import { Type } from "typebox";
 import type { AgentToolUpdateCallback, ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+import type { ExaResponse } from "../client.ts";
 import { formatAgentRun, formatJson, withNotes } from "../format.ts";
 import { isJsonObject } from "../types.ts";
 import {
@@ -14,21 +15,20 @@ import {
 	optionsSchema,
 	pollUntil,
 	progressReporter,
-	requireResponse,
 	type Runtime,
-	textResult,
 	type ToolResult,
+	textResult,
 } from "./common.ts";
 
 const EFFORTS = ["minimal", "low", "medium", "high", "xhigh", "auto", "ultra"] as const;
 const TERMINAL = new Set(["completed", "failed", "cancelled"]);
 
 function statusOf(value: unknown): string {
-	return isJsonObject(value) && typeof value.status === "string" ? value.status : "unknown";
+	return isJsonObject(value) && typeof value["status"] === "string" ? value["status"] : "unknown";
 }
 
 function idOf(value: unknown): string | undefined {
-	return isJsonObject(value) && typeof value.id === "string" ? value.id : undefined;
+	return isJsonObject(value) && typeof value["id"] === "string" ? value["id"] : undefined;
 }
 
 interface WaitOutcome {
@@ -52,7 +52,9 @@ async function pollRun(
 		isDone: (value) => TERMINAL.has(statusOf(value)),
 		onProgress: (value) => report(`status ${statusOf(value)}`),
 		poll: async () => {
-			const response = await runtime.client().send({ method: "GET", path: `/agent/runs/${encodeURIComponent(runId)}`, signal });
+			const response = await runtime
+				.client()
+				.send({ method: "GET", path: `/agent/runs/${encodeURIComponent(runId)}`, signal });
 			return response.data;
 		},
 	});
@@ -65,6 +67,29 @@ function runResult(runtime: Runtime, run: unknown, extra: Record<string, unknown
 	return textResult(text, { tool: "exa_agent", runId, run, ...extra });
 }
 
+/** Send the control request for one action; every action produces a response. */
+async function sendControl(
+	runtime: Runtime,
+	action: string,
+	runId: string | undefined,
+	limit: number | undefined,
+	cursor: string | undefined,
+	signal: AbortSignal | undefined,
+): Promise<ExaResponse> {
+	const runPath = runId ? `/agent/runs/${encodeURIComponent(runId)}` : "/agent/runs";
+	switch (action) {
+		case "list":
+			return runtime.client().send({ method: "GET", path: "/agent/runs", query: { limit, cursor }, signal });
+		case "cancel":
+		case "stop":
+			return runtime.client().send({ method: "POST", path: `${runPath}/${action}`, signal });
+		case "delete":
+			return runtime.client().send({ method: "DELETE", path: runPath, signal });
+		default:
+			return runtime.client().send({ method: "GET", path: `${runPath}/events`, query: { limit, cursor }, signal });
+	}
+}
+
 export function registerAgentTools(pi: ExtensionAPI, runtime: Runtime): void {
 	pi.registerTool({
 		name: "exa_agent_run",
@@ -73,7 +98,7 @@ export function registerAgentTools(pi: ExtensionAPI, runtime: Runtime): void {
 			"Start an asynchronous Exa Agent run for high-compute research: open-ended list building, entity enrichment, multi-hop research, " +
 			"or any task that needs many parallel searches and a schema-validated JSON result. " +
 			"Runs are billed by effort (fixed price for minimal/low/medium/high/xhigh; metered for auto/ultra). " +
-			"By default the tool waits for completion. Requires the agent tool group: call exa_help with topic \"agent\" if you need the full parameter reference.",
+			'By default the tool waits for completion. Requires the agent tool group: call exa_help with topic "agent" if you need the full parameter reference.',
 		promptSnippet: "Run a deep-research / list-building Agent task and get grounded structured output",
 		promptGuidelines: [
 			"Use exa_agent_run when a task needs several searches or schema-validated structured output; use exa_search for a single lookup.",
@@ -81,7 +106,8 @@ export function registerAgentTools(pi: ExtensionAPI, runtime: Runtime): void {
 		],
 		parameters: Type.Object({
 			query: Type.String({
-				description: "What to find or produce, described as data: entities, fields, and constraints. Not just the topic.",
+				description:
+					"What to find or produce, described as data: entities, fields, and constraints. Not just the topic.",
 			}),
 			effort: Type.Optional(
 				Type.Union(
@@ -205,61 +231,34 @@ export function registerAgentTools(pi: ExtensionAPI, runtime: Runtime): void {
 				{ description: "Operation to perform. cancel/stop/delete/events require runId; list accepts limit/cursor." },
 			),
 			runId: Type.Optional(Type.String({ description: "Agent run id (required for cancel, stop, delete, events)." })),
-			limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, description: "Page size for list and events (default 25)." })),
+			limit: Type.Optional(
+				Type.Integer({ minimum: 1, maximum: 100, description: "Page size for list and events (default 25)." }),
+			),
 			cursor: Type.Optional(Type.String({ description: "Pagination cursor returned by a previous list/events call." })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			try {
 				const config = runtime.config();
-				const needsRun = params.action !== "list";
-				if (needsRun && !params.runId) {
+				if (params.action !== "list" && !params.runId) {
 					return textResult(`Error: runId is required for action "${params.action}"`, { error: true });
 				}
-				const runPath = params.runId ? `/agent/runs/${encodeURIComponent(params.runId)}` : "/agent/runs";
-				let response;
-				switch (params.action) {
-					case "list":
-						response = await runtime.client().send({
-							method: "GET",
-							path: "/agent/runs",
-							query: { limit: params.limit, cursor: params.cursor },
-							signal: signal ?? ctx.signal,
-						});
-						return textResult(formatJson(response.data, config.output), {
-							tool: "exa_agent_control",
-							action: "list",
-							...(compactDetails(response) as object),
-						});
-					case "cancel":
-					case "stop":
-						response = await runtime.client().send({
-							method: "POST",
-							path: `${runPath}/${params.action}`,
-							signal: signal ?? ctx.signal,
-						});
-						break;
-					case "delete":
-						response = await runtime.client().send({ method: "DELETE", path: runPath, signal: signal ?? ctx.signal });
-						break;
-					case "events":
-						response = await runtime.client().send({
-							method: "GET",
-							path: `${runPath}/events`,
-							query: { limit: params.limit, cursor: params.cursor },
-							signal: signal ?? ctx.signal,
-						});
-						return textResult(withNotes(formatJson(response.data, config.output), response.notes), {
-							tool: "exa_agent_control",
-							action: "events",
-							...(compactDetails(response) as object),
-						});
+				const response = await sendControl(
+					runtime,
+					params.action,
+					params.runId,
+					params.limit,
+					params.cursor,
+					signal ?? ctx.signal,
+				);
+				const details = { tool: "exa_agent_control", action: params.action, ...(compactDetails(response) as object) };
+				if (params.action === "list") {
+					return textResult(formatJson(response.data, config.output), details);
 				}
-				const settled = requireResponse(response, params.action);
-				return textResult(withNotes(formatAgentRun(settled.data, config.output), settled.notes), {
-					tool: "exa_agent_control",
-					action: params.action,
-					...(compactDetails(settled) as object),
-				});
+				const text =
+					params.action === "events"
+						? withNotes(formatJson(response.data, config.output), response.notes)
+						: withNotes(formatAgentRun(response.data, config.output), response.notes);
+				return textResult(text, details);
 			} catch (error) {
 				return textResult(errorText(error), { tool: "exa_agent_control", error: true });
 			}

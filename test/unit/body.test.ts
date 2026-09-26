@@ -1,6 +1,6 @@
-import test from "node:test";
 import assert from "node:assert/strict";
-import { applyContentMode, buildBody, hasContentMode, queryFrom, withContentMode } from "../src/body.ts";
+import test from "node:test";
+import { applyContentMode, buildBody, hasContentMode, queryFrom, withContentMode } from "../../src/body.ts";
 
 test("buildBody applies defaults, then curated fields, then options", () => {
 	const body = buildBody(
@@ -25,13 +25,13 @@ test("buildBody keeps query out of the body", () => {
 test("applyContentMode replaces configured modes but keeps other content options", () => {
 	const body: Record<string, unknown> = { contents: { text: true, maxAgeHours: 0 } };
 	applyContentMode(body, "highlights");
-	assert.deepEqual(body.contents, { highlights: true, maxAgeHours: 0 });
+	assert.deepEqual(body["contents"], { highlights: true, maxAgeHours: 0 });
 
 	applyContentMode(body, "none");
-	assert.deepEqual(body.contents, { maxAgeHours: 0 });
+	assert.deepEqual(body["contents"], { maxAgeHours: 0 });
 
 	applyContentMode(body, "text+highlights");
-	assert.deepEqual(body.contents, { text: true, highlights: true, maxAgeHours: 0 });
+	assert.deepEqual(body["contents"], { text: true, highlights: true, maxAgeHours: 0 });
 });
 
 test("applyContentMode with nested=false writes top-level keys", () => {

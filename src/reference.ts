@@ -28,8 +28,18 @@ export interface EndpointDoc {
 }
 
 export const ENDPOINTS: EndpointDoc[] = [
-	{ method: "POST", path: "/search", summary: "Web search with optional contents and synthesized output", topic: "search" },
-	{ method: "POST", path: "/contents", summary: "Extract text, highlights, or summaries from known URLs", topic: "contents" },
+	{
+		method: "POST",
+		path: "/search",
+		summary: "Web search with optional contents and synthesized output",
+		topic: "search",
+	},
+	{
+		method: "POST",
+		path: "/contents",
+		summary: "Extract text, highlights, or summaries from known URLs",
+		topic: "contents",
+	},
 	{ method: "POST", path: "/answer", summary: "Grounded answer with citations from a search", topic: "answer" },
 	{ method: "POST", path: "/findSimilar", summary: "Find pages similar to a URL", topic: "similar" },
 	{ method: "POST", path: "/monitors", summary: "Create an Exa Agent Monitor", topic: "monitors" },
@@ -41,12 +51,22 @@ export const ENDPOINTS: EndpointDoc[] = [
 	{ method: "POST", path: "/monitors/{id}/trigger", summary: "Run a monitor immediately", topic: "monitors" },
 	{ method: "GET", path: "/monitors/{id}/runs", summary: "List monitor runs", topic: "monitors" },
 	{ method: "GET", path: "/monitors/{id}/runs/{runId}", summary: "Get a monitor run", topic: "monitors" },
-	{ method: "POST", path: "/agent/runs", summary: "Create an Exa Agent run (deep research / list building)", topic: "agent" },
+	{
+		method: "POST",
+		path: "/agent/runs",
+		summary: "Create an Exa Agent run (deep research / list building)",
+		topic: "agent",
+	},
 	{ method: "GET", path: "/agent/runs", summary: "List agent runs", topic: "agent" },
 	{ method: "GET", path: "/agent/runs/{id}", summary: "Get an agent run", topic: "agent" },
 	{ method: "DELETE", path: "/agent/runs/{id}", summary: "Delete an agent run", topic: "agent" },
 	{ method: "POST", path: "/agent/runs/{id}/cancel", summary: "Cancel an agent run immediately", topic: "agent" },
-	{ method: "POST", path: "/agent/runs/{id}/stop", summary: "Stop an ultra run and keep partial results", topic: "agent" },
+	{
+		method: "POST",
+		path: "/agent/runs/{id}/stop",
+		summary: "Stop an ultra run and keep partial results",
+		topic: "agent",
+	},
 	{ method: "GET", path: "/agent/runs/{id}/events", summary: "Replay stored agent run events", topic: "agent" },
 	{ method: "POST", path: "/batches", summary: "Create a batch of /search or /agent/runs requests", topic: "batches" },
 	{ method: "GET", path: "/batches", summary: "List batches", topic: "batches" },
@@ -59,18 +79,68 @@ export const ENDPOINTS: EndpointDoc[] = [
 	{ method: "POST", path: "/websets/v0/websets/{id}", summary: "Update a Webset title or metadata", topic: "websets" },
 	{ method: "DELETE", path: "/websets/v0/websets/{id}", summary: "Delete a Webset", topic: "websets" },
 	{ method: "POST", path: "/websets/v0/websets/{id}/cancel", summary: "Cancel all Webset work", topic: "websets" },
-	{ method: "POST", path: "/websets/v0/websets/preview", summary: "Preview how a Webset query is interpreted", topic: "websets" },
-	{ method: "POST", path: "/websets/v0/websets/{webset}/searches", summary: "Add a search to a Webset", topic: "websets" },
-	{ method: "GET", path: "/websets/v0/websets/{webset}/searches/{id}", summary: "Get Webset search status", topic: "websets" },
-	{ method: "POST", path: "/websets/v0/websets/{webset}/searches/{id}/cancel", summary: "Cancel a Webset search", topic: "websets" },
-	{ method: "POST", path: "/websets/v0/websets/{webset}/enrichments", summary: "Add an enrichment column", topic: "websets" },
-	{ method: "GET", path: "/websets/v0/websets/{webset}/enrichments/{id}", summary: "Get enrichment status", topic: "websets" },
-	{ method: "PATCH", path: "/websets/v0/websets/{webset}/enrichments/{id}", summary: "Update an enrichment", topic: "websets" },
-	{ method: "DELETE", path: "/websets/v0/websets/{webset}/enrichments/{id}", summary: "Delete an enrichment", topic: "websets" },
-	{ method: "POST", path: "/websets/v0/websets/{webset}/enrichments/{id}/cancel", summary: "Cancel an enrichment", topic: "websets" },
+	{
+		method: "POST",
+		path: "/websets/v0/websets/preview",
+		summary: "Preview how a Webset query is interpreted",
+		topic: "websets",
+	},
+	{
+		method: "POST",
+		path: "/websets/v0/websets/{webset}/searches",
+		summary: "Add a search to a Webset",
+		topic: "websets",
+	},
+	{
+		method: "GET",
+		path: "/websets/v0/websets/{webset}/searches/{id}",
+		summary: "Get Webset search status",
+		topic: "websets",
+	},
+	{
+		method: "POST",
+		path: "/websets/v0/websets/{webset}/searches/{id}/cancel",
+		summary: "Cancel a Webset search",
+		topic: "websets",
+	},
+	{
+		method: "POST",
+		path: "/websets/v0/websets/{webset}/enrichments",
+		summary: "Add an enrichment column",
+		topic: "websets",
+	},
+	{
+		method: "GET",
+		path: "/websets/v0/websets/{webset}/enrichments/{id}",
+		summary: "Get enrichment status",
+		topic: "websets",
+	},
+	{
+		method: "PATCH",
+		path: "/websets/v0/websets/{webset}/enrichments/{id}",
+		summary: "Update an enrichment",
+		topic: "websets",
+	},
+	{
+		method: "DELETE",
+		path: "/websets/v0/websets/{webset}/enrichments/{id}",
+		summary: "Delete an enrichment",
+		topic: "websets",
+	},
+	{
+		method: "POST",
+		path: "/websets/v0/websets/{webset}/enrichments/{id}/cancel",
+		summary: "Cancel an enrichment",
+		topic: "websets",
+	},
 	{ method: "GET", path: "/websets/v0/websets/{webset}/items", summary: "List Webset items", topic: "websets" },
 	{ method: "GET", path: "/websets/v0/websets/{webset}/items/{id}", summary: "Get a Webset item", topic: "websets" },
-	{ method: "DELETE", path: "/websets/v0/websets/{webset}/items/{id}", summary: "Delete a Webset item", topic: "websets" },
+	{
+		method: "DELETE",
+		path: "/websets/v0/websets/{webset}/items/{id}",
+		summary: "Delete a Webset item",
+		topic: "websets",
+	},
 	{ method: "POST", path: "/websets/v0/imports", summary: "Create an import from a CSV/s3 source", topic: "websets" },
 	{ method: "GET", path: "/websets/v0/imports", summary: "List imports", topic: "websets" },
 	{ method: "GET", path: "/websets/v0/imports/{id}", summary: "Get an import", topic: "websets" },
@@ -82,19 +152,39 @@ export const ENDPOINTS: EndpointDoc[] = [
 	{ method: "PATCH", path: "/websets/v0/monitors/{id}", summary: "Update a Webset monitor", topic: "websets" },
 	{ method: "DELETE", path: "/websets/v0/monitors/{id}", summary: "Delete a Webset monitor", topic: "websets" },
 	{ method: "GET", path: "/websets/v0/monitors/{monitor}/runs", summary: "List Webset monitor runs", topic: "websets" },
-	{ method: "GET", path: "/websets/v0/monitors/{monitor}/runs/{id}", summary: "Get a Webset monitor run", topic: "websets" },
+	{
+		method: "GET",
+		path: "/websets/v0/monitors/{monitor}/runs/{id}",
+		summary: "Get a Webset monitor run",
+		topic: "websets",
+	},
 	{ method: "POST", path: "/websets/v0/webhooks", summary: "Create a webhook", topic: "webhooks" },
 	{ method: "GET", path: "/websets/v0/webhooks", summary: "List webhooks", topic: "webhooks" },
 	{ method: "GET", path: "/websets/v0/webhooks/{id}", summary: "Get a webhook", topic: "webhooks" },
 	{ method: "PATCH", path: "/websets/v0/webhooks/{id}", summary: "Update a webhook", topic: "webhooks" },
 	{ method: "DELETE", path: "/websets/v0/webhooks/{id}", summary: "Delete a webhook", topic: "webhooks" },
-	{ method: "GET", path: "/websets/v0/webhooks/{id}/attempts", summary: "List webhook delivery attempts", topic: "webhooks" },
+	{
+		method: "GET",
+		path: "/websets/v0/webhooks/{id}/attempts",
+		summary: "List webhook delivery attempts",
+		topic: "webhooks",
+	},
 	{ method: "GET", path: "/websets/v0/events", summary: "List system events", topic: "webhooks" },
 	{ method: "GET", path: "/websets/v0/events/{id}", summary: "Get a system event", topic: "webhooks" },
 	{ method: "GET", path: "/websets/v0/teams/me", summary: "Team info and concurrency limits", topic: "teams" },
-	{ method: "POST", path: "/research/v0/tasks", summary: "Create a legacy Research task (deprecated)", topic: "research" },
+	{
+		method: "POST",
+		path: "/research/v0/tasks",
+		summary: "Create a legacy Research task (deprecated)",
+		topic: "research",
+	},
 	{ method: "GET", path: "/research/v0/tasks", summary: "List legacy Research tasks (deprecated)", topic: "research" },
-	{ method: "GET", path: "/research/v0/tasks/{id}", summary: "Get a legacy Research task (deprecated)", topic: "research" },
+	{
+		method: "GET",
+		path: "/research/v0/tasks/{id}",
+		summary: "Get a legacy Research task (deprecated)",
+		topic: "research",
+	},
 ];
 
 /** Validate a user/model supplied path for exa_request. */
@@ -620,15 +710,7 @@ ${ENDPOINTS.map((endpoint) => `  ${endpoint.method.padEnd(6)} ${endpoint.path.pa
 	all: {
 		title: "Exa API topics",
 		summary: "Every topic available through exa_help",
-		groups: [
-			"similar",
-			"agent",
-			"monitors",
-			"websets",
-			"webhooks",
-			"batches",
-			"raw",
-		],
+		groups: ["similar", "agent", "monitors", "websets", "webhooks", "batches", "raw"],
 		body: "",
 	},
 };
@@ -677,26 +759,28 @@ export function isKnownPath(path: string): boolean {
 	});
 }
 
+function allTopicsText(): string {
+	const lines = [
+		"Available exa_help topics (request one to get its full parameter reference and enable its tools):",
+		"",
+	];
+	for (const [name, entry] of Object.entries(TOPICS)) {
+		if (name === "all") continue;
+		lines.push(`  ${name.padEnd(12)} ${entry.summary}`);
+	}
+	lines.push("", "Group activation: topic -> tools", "");
+	for (const [name, entry] of Object.entries(TOPICS)) {
+		if (name === "all" || entry.groups.length === 0) continue;
+		lines.push(`  ${name.padEnd(12)} ${entry.groups.join(", ")}`);
+	}
+	return lines.join("\n");
+}
+
 export function helpText(topic: string): string {
 	const selected = TOPICS[topic];
 	if (!selected) {
 		return `Unknown topic "${topic}". Available topics: ${topicNames().join(", ")}`;
 	}
-	if (topic === "all") {
-		const lines = [
-			"Available exa_help topics (request one to get its full parameter reference and enable its tools):",
-			"",
-		];
-		for (const [name, entry] of Object.entries(TOPICS)) {
-			if (name === "all") continue;
-			lines.push(`  ${name.padEnd(12)} ${entry.summary}`);
-		}
-		lines.push("", "Group activation: topic -> tools", "");
-		for (const [name, entry] of Object.entries(TOPICS)) {
-			if (name === "all" || entry.groups.length === 0) continue;
-			lines.push(`  ${name.padEnd(12)} ${entry.groups.join(", ")}`);
-		}
-		return lines.join("\n");
-	}
+	if (topic === "all") return allTopicsText();
 	return `${selected.title}\n${"-".repeat(selected.title.length)}\n\n${selected.body}`;
 }

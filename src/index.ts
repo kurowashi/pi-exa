@@ -20,7 +20,6 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { ExaClient } from "./client.ts";
 import { exampleConfig, globalConfigPath, loadConfigs, resolveConfig } from "./config.ts";
 import { GROUP_NAMES, GROUPS, HELP_TOOL, MANAGED_TOOLS, toolsForGroups } from "./registry.ts";
-import type { ResolvedConfig } from "./types.ts";
 import { registerAgentTools } from "./tools/agent.ts";
 import { registerBatchTool } from "./tools/batches.ts";
 import type { Runtime } from "./tools/common.ts";
@@ -31,11 +30,69 @@ import { registerRequestTool } from "./tools/request.ts";
 import { registerSimilarTool } from "./tools/similar.ts";
 import { registerWebhooksTool } from "./tools/webhooks.ts";
 import { registerWebsetsTool } from "./tools/websets.ts";
+import type { ResolvedConfig } from "./types.ts";
 
 function maskKey(key: string | undefined): string | undefined {
 	if (!key) return undefined;
 	if (key.length <= 8) return "***";
 	return `${key.slice(0, 4)}…${key.slice(-4)}`;
+}
+
+/** The /exa config payload, with the key masked. */
+function configReport(resolved: ResolvedConfig, cwd: string): string {
+	const shown = {
+		...resolved,
+		apiKey: maskKey(resolved.apiKey),
+		configFiles: {
+			global: globalConfigPath(),
+			project: `${cwd}/.pi/exa.json (trusted projects only)`,
+		},
+	};
+	return JSON.stringify(shown, null, 2);
+}
+
+/** /exa init [force]: write the example config unless it exists. */
+function initConfig(ctx: ExtensionContext, force: boolean): void {
+	const target = globalConfigPath();
+	if (fs.existsSync(target) && !force) {
+		ctx.ui.notify(`${target} already exists (use /exa init force to overwrite)`, "warning");
+		return;
+	}
+	try {
+		fs.writeFileSync(target, `${JSON.stringify(exampleConfig(), null, 2)}\n`, "utf8");
+		ctx.ui.notify(`Wrote example config to ${target}`, "info");
+	} catch (error) {
+		ctx.ui.notify(`Failed to write ${target}: ${error instanceof Error ? error.message : String(error)}`, "error");
+	}
+}
+
+/** /exa enable <group...>: activate the requested groups. */
+function enableGroups(requested: string[], activate: (groups: string[]) => string[], ctx: ExtensionContext): void {
+	const invalid = requested.filter((group) => !GROUP_NAMES.includes(group) && group !== "all");
+	if (requested.length === 0 || invalid.length > 0) {
+		ctx.ui.notify(
+			`Usage: /exa enable <${GROUP_NAMES.join("|")}|all>${invalid.length > 0 ? ` (unknown: ${invalid.join(", ")})` : ""}`,
+			"warning",
+		);
+		return;
+	}
+	const groups = requested.includes("all") ? GROUP_NAMES : requested;
+	const enabled = activate(groups);
+	ctx.ui.notify(enabled.length > 0 ? `Enabled: ${enabled.join(", ")}` : "Those tools were already enabled.", "info");
+}
+
+/** /exa status: the effective config and active tool surface. */
+function statusReport(resolved: ResolvedConfig, active: string[]): string {
+	const activeExa = active.filter((name) => MANAGED_TOOLS.includes(name) && name !== HELP_TOOL);
+	return [
+		`config     ${globalConfigPath()}`,
+		`apiKey     ${resolved.apiKey ? `set (${resolved.apiKeySource})` : "not set"}`,
+		`baseUrl    ${resolved.baseUrl}`,
+		`groups     ${resolved.groups.join(", ")} (startup)`,
+		`active     ${activeExa.join(", ") || "none"}`,
+		`available  ${GROUP_NAMES.join(", ")}`,
+		`usage      /exa status | /exa config | /exa enable <group> | /exa init [force]`,
+	].join("\n");
 }
 
 export default function exaExtension(pi: ExtensionAPI): void {
@@ -124,71 +181,23 @@ export default function exaExtension(pi: ExtensionAPI): void {
 			const resolved = refreshConfig(ctx.cwd, ctx.isProjectTrusted());
 			const parts = args.trim().split(/\s+/).filter(Boolean);
 			const action = parts[0] ?? "status";
-
-			if (action === "config") {
-				const shown = {
-					...resolved,
-					apiKey: maskKey(resolved.apiKey),
-					configFiles: {
-						global: globalConfigPath(),
-						project: `${ctx.cwd}/.pi/exa.json (trusted projects only)`,
-					},
-				};
-				ctx.ui.notify(JSON.stringify(shown, null, 2), "info");
-				return;
-			}
-
-			if (action === "init") {
-				const target = globalConfigPath();
-				if (fs.existsSync(target) && parts[1] !== "force") {
-					ctx.ui.notify(`${target} already exists (use /exa init force to overwrite)`, "warning");
+			switch (action) {
+				case "config":
+					ctx.ui.notify(configReport(resolved, ctx.cwd), "info");
 					return;
-				}
-				try {
-					fs.writeFileSync(target, `${JSON.stringify(exampleConfig(), null, 2)}\n`, "utf8");
-					ctx.ui.notify(`Wrote example config to ${target}`, "info");
-				} catch (error) {
-					ctx.ui.notify(`Failed to write ${target}: ${error instanceof Error ? error.message : String(error)}`, "error");
-				}
-				return;
-			}
-
-			if (action === "enable") {
-				const requested = parts.slice(1);
-				const invalid = requested.filter((group) => !GROUP_NAMES.includes(group) && group !== "all");
-				if (requested.length === 0 || invalid.length > 0) {
-					ctx.ui.notify(
-						`Usage: /exa enable <${GROUP_NAMES.join("|")}|all>${invalid.length > 0 ? ` (unknown: ${invalid.join(", ")})` : ""}`,
-						"warning",
-					);
+				case "init":
+					initConfig(ctx, parts[1] === "force");
 					return;
-				}
-				const groups = requested.includes("all") ? GROUP_NAMES : requested;
-				const enabled = activate(groups);
-				ctx.ui.notify(
-					enabled.length > 0 ? `Enabled: ${enabled.join(", ")}` : "Those tools were already enabled.",
-					"info",
-				);
-				return;
+				case "enable":
+					enableGroups(parts.slice(1), activate, ctx);
+					return;
+				case "status":
+				case "help":
+					ctx.ui.notify(statusReport(resolved, pi.getActiveTools()), "info");
+					return;
+				default:
+					ctx.ui.notify(`Unknown /exa action "${action}". Try /exa status.`, "warning");
 			}
-
-			if (action === "status" || action === "help") {
-				const active = pi.getActiveTools();
-				const activeExa = active.filter((name) => MANAGED_TOOLS.includes(name) && name !== HELP_TOOL);
-				const lines = [
-					`config     ${globalConfigPath()}`,
-					`apiKey     ${resolved.apiKey ? `set (${resolved.apiKeySource})` : "not set"}`,
-					`baseUrl    ${resolved.baseUrl}`,
-					`groups     ${resolved.groups.join(", ")} (startup)`,
-					`active     ${activeExa.join(", ") || "none"}`,
-					`available  ${GROUP_NAMES.join(", ")}`,
-					`usage      /exa status | /exa config | /exa enable <group> | /exa init [force]`,
-				];
-				ctx.ui.notify(lines.join("\n"), "info");
-				return;
-			}
-
-			ctx.ui.notify(`Unknown /exa action "${action}". Try /exa status.`, "warning");
 		},
 	});
 }

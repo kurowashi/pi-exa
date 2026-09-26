@@ -73,9 +73,9 @@ export interface ExaConfigFile {
 }
 
 export interface ResolvedConfig {
-	apiKey?: string;
+	apiKey?: string | undefined;
 	/** Where the key came from, for diagnostics: "env:EXA_API_KEY", "config", ... */
-	apiKeySource?: string;
+	apiKeySource?: string | undefined;
 	baseUrl: string;
 	timeoutMs: number;
 	/** Tool groups active at session start; `["core"]` unless configured otherwise. */

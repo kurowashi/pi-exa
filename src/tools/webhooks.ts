@@ -2,21 +2,44 @@
  * exa_webhooks - webset webhooks and the system event feed (`/websets/v0`).
  */
 
-import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+import type { ExaClient, ExaResponse } from "../client.ts";
 import { formatJson } from "../format.ts";
-import {
-	buildBody,
-	compactDetails,
-	errorText,
-	optionsSchema,
-	queryFrom,
-	requireResponse,
-	type Runtime,
-	textResult,
-} from "./common.ts";
+import { buildBody, compactDetails, errorText, optionsSchema, queryFrom, type Runtime, textResult } from "./common.ts";
 
 const ACTIONS = ["create", "list", "get", "update", "delete", "attempts", "events", "event"] as const;
+
+/** Send the request for one webhook action; every action produces a response. */
+async function sendWebhookAction(
+	client: ExaClient,
+	action: string,
+	base: string,
+	webhookPath: string,
+	query: Record<string, unknown>,
+	options: unknown,
+	id: string | undefined,
+	signal: AbortSignal | undefined,
+): Promise<ExaResponse> {
+	switch (action) {
+		case "create":
+			return client.send({ method: "POST", path: base, body: buildBody({}, {}, options), signal });
+		case "list":
+			return client.send({ method: "GET", path: base, query, signal });
+		case "get":
+			return client.send({ method: "GET", path: webhookPath, signal });
+		case "update":
+			return client.send({ method: "PATCH", path: webhookPath, body: buildBody({}, {}, options), signal });
+		case "delete":
+			return client.send({ method: "DELETE", path: webhookPath, signal });
+		case "attempts":
+			return client.send({ method: "GET", path: `${webhookPath}/attempts`, query, signal });
+		case "events":
+			return client.send({ method: "GET", path: "/websets/v0/events", query, signal });
+		default:
+			return client.send({ method: "GET", path: `/websets/v0/events/${encodeURIComponent(id ?? "")}`, signal });
+	}
+}
 
 export function registerWebhooksTool(pi: ExtensionAPI, runtime: Runtime): void {
 	pi.registerTool({
@@ -43,58 +66,31 @@ export function registerWebhooksTool(pi: ExtensionAPI, runtime: Runtime): void {
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			try {
 				const config = runtime.config();
-				const client = runtime.client();
 				const abort = signal ?? ctx.signal;
 				const query = { limit: params.limit, cursor: params.cursor, ...queryFrom(params.options) };
 				const base = "/websets/v0/webhooks";
 				const webhookPath = params.webhookId ? `${base}/${encodeURIComponent(params.webhookId)}` : base;
-				if (params.action !== "create" && params.action !== "list" && params.action !== "events" && !params.webhookId && params.action !== "event") {
+				const needsWebhookId = ["get", "update", "delete", "attempts"].includes(params.action);
+				if (needsWebhookId && !params.webhookId) {
 					return textResult(`Error: webhookId is required for action "${params.action}"`, { error: true });
 				}
 				if (params.action === "event" && !params.id) {
 					return textResult('Error: id is required for action "event"', { error: true });
 				}
-
-				let response;
-				switch (params.action) {
-					case "create": {
-						const body = buildBody({}, {}, params.options);
-						response = await client.send({ method: "POST", path: base, body, signal: abort });
-						break;
-					}
-					case "list":
-						response = await client.send({ method: "GET", path: base, query, signal: abort });
-						break;
-					case "get":
-						response = await client.send({ method: "GET", path: webhookPath, signal: abort });
-						break;
-					case "update": {
-						const body = buildBody({}, {}, params.options);
-						response = await client.send({ method: "PATCH", path: webhookPath, body, signal: abort });
-						break;
-					}
-					case "delete":
-						response = await client.send({ method: "DELETE", path: webhookPath, signal: abort });
-						break;
-					case "attempts":
-						response = await client.send({ method: "GET", path: `${webhookPath}/attempts`, query, signal: abort });
-						break;
-					case "events":
-						response = await client.send({ method: "GET", path: "/websets/v0/events", query, signal: abort });
-						break;
-					case "event":
-						response = await client.send({
-							method: "GET",
-							path: `/websets/v0/events/${encodeURIComponent(params.id as string)}`,
-							signal: abort,
-						});
-						break;
-				}
-				const settled = requireResponse(response, params.action);
-				return textResult(formatJson(settled.data, config.output), {
+				const response = await sendWebhookAction(
+					runtime.client(),
+					params.action,
+					base,
+					webhookPath,
+					query,
+					params.options,
+					params.id,
+					abort,
+				);
+				return textResult(formatJson(response.data, config.output), {
 					tool: "exa_webhooks",
 					action: params.action,
-					...(compactDetails(settled) as object),
+					...(compactDetails(response) as object),
 				});
 			} catch (error) {
 				return textResult(errorText(error), { tool: "exa_webhooks", error: true });

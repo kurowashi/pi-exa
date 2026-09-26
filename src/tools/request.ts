@@ -5,8 +5,8 @@
  * hit the wrong resource.
  */
 
-import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { formatJson, withNotes } from "../format.ts";
 import { isKnownPath, nearestPaths, normalizeRequestPath } from "../reference.ts";
 import { compactDetails, errorText, optionsSchema, type Runtime, textResult } from "./common.ts";
@@ -31,14 +31,9 @@ export function registerRequestTool(pi: ExtensionAPI, runtime: Runtime): void {
 			}),
 			body: optionsSchema("JSON request body for POST/PATCH."),
 			query: Type.Optional(
-				Type.Object(
-					{},
-					{ additionalProperties: true, description: "Query-string parameters; arrays repeat the key." },
-				),
+				Type.Object({}, { additionalProperties: true, description: "Query-string parameters; arrays repeat the key." }),
 			),
-			beta: Type.Optional(
-				Type.String({ description: 'Optional Exa-Beta header token, e.g. "batches-2026-06-06".' }),
-			),
+			beta: Type.Optional(Type.String({ description: 'Optional Exa-Beta header token, e.g. "batches-2026-06-06".' })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			try {
