@@ -4,15 +4,15 @@
 設計の判断基準は DESIGN.md と PHILOSOPHY.md(このプラグイン群共通)に書きます。
 
 ここには、壊してはいけない制約と、制約に触れる変更の手順だけを書きます。制約の正はテストで、
-下の表はその索引です。実装と表が食い違った場合はテストが正です。検証手段を併記できないものは
-制約として書かず、自動テストできない範囲は末尾に分けます。
+下の表はその索引です。実装と表が食い違った場合はテストが正です。検証手段を併記できないものは制約として書かず、
+自動テストできない範囲は末尾に分けます。
 
 ## 完了条件
 
 `npm run verify`(= `npm run check` + `npm test` + `npm run test:coverage`)が通ること。
 フックが通っても CI が通らなければ未完了。CI は同じ `verify` を Node 22.19 / 24 で実行します。
-カバレッジは `test/unit` と `test/integration` で計測します。下の表の「検証」列は個別の検証箇所で
-あり、自動検証はすべて `verify` に含まれます。
+カバレッジは `test/unit` と `test/integration` で計測します。下の表の「検証」列は個別の検証箇所であり、
+自動検証はすべて `verify` に含まれます。
 
 ## 制約
 
@@ -69,35 +69,35 @@
 
 ## 変更時の手順
 
-- ツールを増やす・引数を増やす場合は、`src/registry.ts`(`GROUPS` / `MANAGED_TOOLS` / `TOOL_SIGNATURES`)と
-  `test/contract/tool-surface.test.ts` の `EXPECTED_TOOLS` を更新する。常時有効にする場合は `ALWAYS_ON` を
-  更新する。`TOKEN_BUDGET` は「上げるもの」ではなく「交渉するもの」として扱い、再導出は PHILOSOPHY.md の
-  判断手順に立ち返る。上げる場合は計測値をテストのコメントに更新し、コミットメッセージに理由を残す。
-- エンドポイントやトピックを足す場合は `src/reference.ts` の索引も更新する。「全エンドポイントが
-  トピックから到達可能」を `test/unit/reference.test.ts` が検査する。
-- 依存を追加する場合は devDependency のみ可能。`DEV_TOOLS` の更新とコミットメッセージの理由を
-  セットで行う。実行時依存(`dependencies`)の追加は不可。
-- 決定の記録は `docs/adr/` に置く(1決定 = 1ファイル、`NNNN-<topic>.md`)。追加するのは、却下した
-  代替を再提案されうる決定、機能や振る舞いを削除・置き換える決定、DESIGN.md / PHILOSOPHY.md に
-  触れる決定のときだけ。却下案は結果ではなく理由を書く。
-- ツール・コマンド・設定・公開の振る舞いを変える前に `docs/adr/` を読み、却下済みの代替を
-  再提案しない。決定が変わったら同じコミットで状態を更新する(採用 → 廃止)。
-- カバレッジの数値は契約テストの影響を受けます。契約テストは jiti 経由で `src` をもう一度
-  ロードするため、同じファイルが2実体として数えられます。
+- ツールを増やす・引数を増やす場合は、`src/registry.ts`(`GROUPS` / `MANAGED_TOOLS` / `TOOL_SIGNATURES`)と `test/contract/tool-surface.test.ts` の `EXPECTED_TOOLS` を更新する。
+  常時有効にする場合は `ALWAYS_ON` を更新する。
+  `TOKEN_BUDGET` は「上げるもの」ではなく「交渉するもの」として扱い、再導出は PHILOSOPHY.md の判断手順に立ち返る。
+  上げる場合は計測値をテストのコメントに更新し、コミットメッセージに理由を残す。
+- エンドポイントやトピックを足す場合は `src/reference.ts` の索引も更新する。
+  「全エンドポイントがトピックから到達可能」を `test/unit/reference.test.ts` が検査する。
+- 依存を追加する場合は devDependency のみ可能。`DEV_TOOLS` の更新とコミットメッセージの理由をセットで行う。
+  実行時依存(`dependencies`)の追加は不可。
+- 決定の記録は `docs/adr/` に置く(1決定 = 1ファイル、`NNNN-<topic>.md`)。追加するのは、
+  却下した代替を再提案されうる決定、機能や振る舞いを削除・置き換える決定、DESIGN.md / PHILOSOPHY.md に触れる決定のときだけ。
+  却下案は結果ではなく理由を書く。
+- ツール・コマンド・設定・公開の振る舞いを変える前に `docs/adr/` を読み、却下済みの代替を再提案しない。
+  決定が変わったら同じコミットで状態を更新する(採用 → 廃止)。
+- カバレッジの数値は契約テストの影響を受けます。契約テストは jiti 経由で `src` をもう一度ロードするため、
+  同じファイルが2実体として数えられます。
 
 ## 手動確認項目(自動検証の対象外)
 
-HTTP はすべてモックでテストしているため、実際の Exa API との接続はここで確認します。前提: 実
-`EXA_API_KEY` を用意します。
+HTTP はすべてモックでテストしているため、実際の Exa API との接続はここで確認します。前提:
+実 `EXA_API_KEY` を用意します。
 
-1. `exa_search` / `exa_contents` / `exa_answer` / `exa_similar` が結果を返し、`includeCost` の
-   コストが表示されること。
-2. `exa_help` でグループを有効化し、以後そのツールが呼べること。有効化前はシステムプロンプトと
-   ツール一覧に現れないこと。
+1. `exa_search` / `exa_contents` / `exa_answer` / `exa_similar` が結果を返し、
+   `includeCost` のコストが表示されること。
+2. `exa_help` でグループを有効化し、以後そのツールが呼べること。
+   有効化前はシステムプロンプトとツール一覧に現れないこと。
 3. `exa_request` で documented なパスを叩けること。未知のパスが近い候補付きで拒否されること。
 4. `deep` 系モード・`outputSchema`・subpages が実 API で動くこと。
-5. agent / websets / batch の `wait` ポーリングが実タスクで終端に達し、timeout 時に再開のヒントが
-   出ること。
+5. agent / websets / batch の `wait` ポーリングが実タスクで終端に達し、
+   timeout 時に再開のヒントが出ること。
 6. TUI で `/exa status` / `config` / `enable` / `init` が動き、`/exa config` が API キーをマスクすること。
 7. 設定ファイル(`~/.pi/agent/exa.json`、信頼プロジェクトの `.pi/exa.json`)が探索・マージされ、
    壊れた値は警告になること。
@@ -107,13 +107,12 @@ HTTP はすべてモックでテストしているため、実際の Exa API と
 トークン予算は契約テストが守るが、「そのコストが機能と実使用に見合うか」は自動化できない。
 ツール面(説明・スキーマ・引数)を変えた時と、定期的に確認する:
 
-1. 計測: 常時有効な4ツールの `name + description + JSON.stringify(parameters)` を
-   `test/contract/tool-surface.test.ts` の `tokensOf` と同じ式(4文字=1トークン)で
-   ツール別・引数別に集計する。
-2. 実使用: `~/.pi/agent/sessions/**/*.jsonl` と `~/.pi/agent/spawn-sessions/*.jsonl` を JSONL と
-   して読み、`role: "assistant"` の `content[].type == "toolCall"` を集計する。ツール別の
-   呼び出し回数、引数の使用率、`role: "toolResult"` のエラー(`details.error` か
-   `Validation failed for tool`)を出す。
+1. 計測:
+   常時有効な4ツールの `name + description + JSON.stringify(parameters)` を `test/contract/tool-surface.test.ts` の `tokensOf` と同じ式(4文字=1トークン)でツール別・引数別に集計する。
+2. 実使用: `~/.pi/agent/sessions/**/*.jsonl` と `~/.pi/agent/spawn-sessions/*.jsonl` を JSONL として読み、
+   `role: "assistant"` の `content[].type == "toolCall"` を集計する。
+   ツール別の呼び出し回数、引数の使用率、
+   `role: "toolResult"` のエラー(`details.error` か `Validation failed for tool`)を出す。
    - 開発セッションの意図的な境界値・不正値テストは誤用と数えず、通常利用と分ける。
    - 文字列 grep で `"name":"exa_search"` を数えると、システムプロンプトの `toolsAdded` を
      拾って過大になる。必ず toolCall パートをパースする。
