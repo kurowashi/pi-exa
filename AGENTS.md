@@ -72,7 +72,7 @@
 - ツールを増やす・引数を増やす場合は、`src/registry.ts`(`GROUPS` / `MANAGED_TOOLS` / `TOOL_SIGNATURES`)と
   `test/contract/tool-surface.test.ts` の `EXPECTED_TOOLS` を更新する。常時有効にする場合は `ALWAYS_ON` を
   更新する。`TOKEN_BUDGET` は「上げるもの」ではなく「交渉するもの」として扱い、再導出は PHILOSOPHY.md の
-  判断手順に従う。上げる場合は計測値をテストのコメントに更新し、コミットメッセージに理由を残す。
+  判断手順に立ち返る。上げる場合は計測値をテストのコメントに更新し、コミットメッセージに理由を残す。
 - エンドポイントやトピックを足す場合は `src/reference.ts` の索引も更新する。「全エンドポイントが
   トピックから到達可能」を `test/unit/reference.test.ts` が検査する。
 - 依存を追加する場合は devDependency のみ可能。`DEV_TOOLS` の更新とコミットメッセージの理由を
