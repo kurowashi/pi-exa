@@ -24,9 +24,9 @@ import type {
 } from "./types.ts";
 import { isJsonObject } from "./types.ts";
 
-export const CONFIG_FILE_NAME = "exa.json";
-export const DEFAULT_BASE_URL = "https://api.exa.ai";
-export const DEFAULT_TIMEOUT_MS = 60_000;
+const CONFIG_FILE_NAME = "exa.json";
+const DEFAULT_BASE_URL = "https://api.exa.ai";
+const DEFAULT_TIMEOUT_MS = 60_000;
 
 export const DEFAULT_OUTPUT: OutputSettings = {
 	maxResults: 10,
@@ -35,13 +35,13 @@ export const DEFAULT_OUTPUT: OutputSettings = {
 	includeCost: true,
 };
 
-export const DEFAULT_WAIT: WaitSettings = {
+const DEFAULT_WAIT: WaitSettings = {
 	enabled: true,
 	timeoutMs: 600_000,
 	pollIntervalMs: 2_000,
 };
 
-export function agentDir(): string {
+function agentDir(): string {
 	const override = process.env["PI_CODING_AGENT_DIR"]?.trim();
 	return override && override.length > 0 ? override : path.join(os.homedir(), ".pi", "agent");
 }
@@ -50,12 +50,12 @@ export function globalConfigPath(): string {
 	return path.join(agentDir(), CONFIG_FILE_NAME);
 }
 
-export function projectConfigPath(cwd: string): string {
+function projectConfigPath(cwd: string): string {
 	return path.join(cwd, ".pi", CONFIG_FILE_NAME);
 }
 
 /** Read one config file. Returns a warning instead of throwing on bad input. */
-export function readConfigFile(file: string): { config?: ExaConfigFile; warning?: string } {
+function readConfigFile(file: string): { config?: ExaConfigFile; warning?: string } {
 	if (!fs.existsSync(file)) return {};
 	let text: string;
 	try {

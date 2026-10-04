@@ -9,7 +9,7 @@ import { isJsonObject } from "./types.ts";
 
 const CONTENT_KEYS = ["text", "highlights", "summary", "context"] as const;
 
-export function jsonObject(value: unknown): JsonObject | undefined {
+function jsonObject(value: unknown): JsonObject | undefined {
 	return isJsonObject(value) ? value : undefined;
 }
 

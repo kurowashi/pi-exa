@@ -15,7 +15,6 @@ export {
 	buildBody,
 	type ContentMode,
 	hasContentMode,
-	jsonObject,
 	queryFrom,
 	withContentMode,
 } from "../body.ts";
@@ -89,7 +88,7 @@ export async function pollUntil<T>(options: PollOptions<T>): Promise<PollOutcome
 	return { value, timedOut, polls };
 }
 
-export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 	if (ms <= 0) return Promise.resolve();
 	return new Promise((resolve, reject) => {
 		const timer = setTimeout(() => {
@@ -151,12 +150,6 @@ export function compactDetails(response: ExaResponse, limit = 80_000): unknown {
 	if (typeof data["id"] === "string") summary["id"] = data["id"];
 	if (typeof data["status"] === "string") summary["status"] = data["status"];
 	return summary;
-}
-
-/** Guard for action-dispatch tools: every handled action assigns a response. */
-export function requireResponse(response: ExaResponse | undefined, action: string): ExaResponse {
-	if (!response) throw new Error(`no response produced for action "${action}"`);
-	return response;
 }
 
 export function errorText(error: unknown): string {

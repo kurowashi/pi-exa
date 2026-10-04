@@ -67,14 +67,3 @@ export function signaturesForTools(tools: string[]): string[] {
 		.filter((signature): signature is string => Boolean(signature))
 		.map((signature) => `  ${signature}`);
 }
-
-export function signaturesFor(groups: string[]): string[] {
-	const lines: string[] = [];
-	for (const group of groups) {
-		for (const tool of toolsInGroup(group)) {
-			const signature = TOOL_SIGNATURES[tool];
-			if (signature) lines.push(`  ${signature}`);
-		}
-	}
-	return lines;
-}

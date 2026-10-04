@@ -19,7 +19,7 @@ export interface WaitSettings {
 }
 
 /** `wait` settings as written in a config file: same fields, but in seconds. */
-export interface WaitConfig {
+interface WaitConfig {
 	enabled?: boolean;
 	/** Give up waiting after this many seconds. */
 	timeoutSeconds?: number;

@@ -41,7 +41,7 @@ function indentBlock(text: string, prefix = "   "): string {
 		.join("\n");
 }
 
-export function costLine(data: unknown, output: OutputSettings): string | undefined {
+function costLine(data: unknown, output: OutputSettings): string | undefined {
 	if (!output.includeCost || !isJsonObject(data)) return undefined;
 	const cost = data["costDollars"];
 	if (!isJsonObject(cost)) return undefined;
@@ -63,7 +63,7 @@ function groundingLine(entry: unknown): string | undefined {
 	return `${field}${suffix} → ${citations.slice(0, 4).join(", ") || "(no citations)"}`;
 }
 
-export function groundingLines(grounding: unknown, limit = 12): string[] {
+function groundingLines(grounding: unknown, limit = 12): string[] {
 	const entries = arrayOf(grounding);
 	const lines: string[] = [];
 	for (const entry of entries.slice(0, limit)) {

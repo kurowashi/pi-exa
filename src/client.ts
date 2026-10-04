@@ -9,7 +9,7 @@
 import type { JsonObject, ResolvedConfig } from "./types.ts";
 import { isJsonObject } from "./types.ts";
 
-export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 export interface ExaRequest {
 	method: HttpMethod;
