@@ -14,6 +14,17 @@
 カバレッジは `test/unit` と `test/integration` で計測します。下の表の「検証」列は個別の検証箇所であり、
 自動検証はすべて `verify` に含まれます。
 
+## ローカル開発
+
+- `npm install`: 依存を入れる。依存はすべて devDependency で、実行時依存はゼロ。
+- `npx lefthook install`: git フックを有効にする。手動で実行する。
+  `package.json` の lifecycle script には置かない。`pi install git:...` は `npm install --omit=dev` を実行するため、
+  devDependency の lefthook が無い状態で script が走るとインストールごと失敗する。
+- フックは利便性のためのもの。完了条件は常に `npm run verify`。
+- ソースの対応: `src/config.ts`(設定の探索・マージ)、`src/client.ts`(HTTP)、`src/format.ts`(モデル向け整形と出力上限)、
+  `src/reference.ts`(`exa_help` のトピックと全エンドポイント索引)、`src/registry.ts`(ツール名・グループ)、`src/tools/*.ts`(ツール実装)。
+- 契約テストは `test/contract/`(ツール面・常時予算・import 境界)と `test/ci/`(npm pack の内容)。`src` を Pi のローダー経由で読み込んで検証する。
+
 ## 制約
 
 ### ツール面
@@ -44,6 +55,7 @@
 | リクエストボディは設定の `defaults` → ツール引数 → `options` の順に重なる | `test/unit/body.test.ts` | `src/body.ts` の `buildBody` |
 | 設定はグローバル→プロジェクトの順にマージする | `test/unit/config.test.ts` | `src/config.ts` の `loadConfigs` |
 | API キーは `apiKeyEnv` → `EXA_API_KEY` → 設定の順で解決する | `test/unit/config.test.ts` | `src/config.ts` の `resolveApiKey` |
+| 数値設定が不正(非数・下限未満)なら警告を出し、既定値に戻す | `test/unit/config.test.ts` | `src/config.ts` の `positiveInt` |
 | モデルへの出力は `output` の上限(`maxResults` / `maxTotalChars` / `maxCharsPerResult`)に従う | `test/unit/format.test.ts` | `src/format.ts` |
 | `/exa config` は API キーをマスクする | `test/integration/extension.test.ts` | `src/index.ts` の `maskKey` |
 

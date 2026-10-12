@@ -110,6 +110,36 @@ test("resolveConfig validates groups and merges output settings", () => {
 	assert.equal(config.wait.agent.timeoutMs, 600_000);
 });
 
+test("resolveConfig warns on invalid numeric settings and falls back to defaults", () => {
+	const warnings: string[] = [];
+	const config = resolveConfig(
+		{
+			globalFile: "g",
+			projectFile: "p",
+			configs: [
+				{
+					apiKey: "literal",
+					timeoutSeconds: 0,
+					output: { maxResults: 0, maxCharsPerResult: 100 },
+					wait: { agent: { pollIntervalSeconds: -1 } },
+				},
+			],
+			warnings,
+		},
+		{ knownGroups: ["core"] },
+	);
+	assert.deepEqual(warnings, [
+		"timeoutSeconds must be a number >= 1; using 60",
+		"wait.agent.pollIntervalSeconds must be a number >= 1; using 2",
+		"output.maxResults must be a number >= 1; using 10",
+		"output.maxCharsPerResult must be a number >= 200; using 4000",
+	]);
+	assert.equal(config.timeoutMs, 60_000);
+	assert.equal(config.output.maxResults, DEFAULT_OUTPUT.maxResults);
+	assert.equal(config.output.maxCharsPerResult, DEFAULT_OUTPUT.maxCharsPerResult);
+	assert.equal(config.wait.agent.pollIntervalMs, 2_000);
+});
+
 test("resolveConfig treats groups 'all' as a wildcard", () => {
 	const config = resolveConfig(
 		{ globalFile: "g", projectFile: "p", configs: [{ groups: "all" }], warnings: [] },

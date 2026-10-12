@@ -117,8 +117,9 @@ function objectOrEmpty(value: unknown): JsonObject {
 	return isJsonObject(value) ? value : {};
 }
 
-function positiveInt(value: unknown, fallback: number, min = 1): number {
+function positiveInt(value: unknown, fallback: number, min: number, label: string, warnings: string[]): number {
 	if (typeof value === "number" && Number.isFinite(value) && value >= min) return Math.floor(value);
+	warnings.push(`${label} must be a number >= ${min}; using ${fallback}`);
 	return fallback;
 }
 
@@ -126,32 +127,49 @@ function stringSetting(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-function mergeOutput(configs: ExaConfigFile[]): OutputSettings {
+function mergeOutput(configs: ExaConfigFile[], warnings: string[]): OutputSettings {
 	const merged: OutputSettings = { ...DEFAULT_OUTPUT };
 	for (const config of configs) {
 		const output = objectOrEmpty(config.output);
-		if (output["maxResults"] !== undefined) merged.maxResults = positiveInt(output["maxResults"], merged.maxResults, 1);
+		if (output["maxResults"] !== undefined) {
+			merged.maxResults = positiveInt(output["maxResults"], merged.maxResults, 1, "output.maxResults", warnings);
+		}
 		if (output["maxCharsPerResult"] !== undefined) {
-			merged.maxCharsPerResult = positiveInt(output["maxCharsPerResult"], merged.maxCharsPerResult, 200);
+			merged.maxCharsPerResult = positiveInt(
+				output["maxCharsPerResult"],
+				merged.maxCharsPerResult,
+				200,
+				"output.maxCharsPerResult",
+				warnings,
+			);
 		}
 		if (output["maxTotalChars"] !== undefined) {
-			merged.maxTotalChars = positiveInt(output["maxTotalChars"], merged.maxTotalChars, 1_000);
+			merged.maxTotalChars = positiveInt(
+				output["maxTotalChars"],
+				merged.maxTotalChars,
+				1_000,
+				"output.maxTotalChars",
+				warnings,
+			);
 		}
 		if (typeof output["includeCost"] === "boolean") merged.includeCost = output["includeCost"];
 	}
 	return merged;
 }
 
-function mergeWait(configs: ExaConfigFile[], key: "agent" | "webset" | "batch"): WaitSettings {
+function mergeWait(configs: ExaConfigFile[], key: "agent" | "webset" | "batch", warnings: string[]): WaitSettings {
 	const merged: WaitSettings = { ...DEFAULT_WAIT };
 	for (const config of configs) {
 		const wait = objectOrEmpty(objectOrEmpty(config.wait)[key]);
 		if (typeof wait["enabled"] === "boolean") merged.enabled = wait["enabled"];
 		if (wait["timeoutSeconds"] !== undefined) {
-			merged.timeoutMs = positiveInt(wait["timeoutSeconds"], merged.timeoutMs / 1000, 1) * 1000;
+			const label = `wait.${key}.timeoutSeconds`;
+			merged.timeoutMs = positiveInt(wait["timeoutSeconds"], merged.timeoutMs / 1000, 1, label, warnings) * 1000;
 		}
 		if (wait["pollIntervalSeconds"] !== undefined) {
-			merged.pollIntervalMs = positiveInt(wait["pollIntervalSeconds"], merged.pollIntervalMs / 1000, 1) * 1000;
+			const label = `wait.${key}.pollIntervalSeconds`;
+			merged.pollIntervalMs =
+				positiveInt(wait["pollIntervalSeconds"], merged.pollIntervalMs / 1000, 1, label, warnings) * 1000;
 		}
 	}
 	return merged;
@@ -223,11 +241,11 @@ function resolveBaseUrl(configs: ExaConfigFile[]): string {
 	return DEFAULT_BASE_URL;
 }
 
-function resolveTimeout(configs: ExaConfigFile[]): number {
+function resolveTimeout(configs: ExaConfigFile[], warnings: string[]): number {
 	let timeoutMs = DEFAULT_TIMEOUT_MS;
 	for (const config of configs) {
 		if (config.timeoutSeconds !== undefined) {
-			timeoutMs = positiveInt(config.timeoutSeconds, timeoutMs / 1000, 1) * 1000;
+			timeoutMs = positiveInt(config.timeoutSeconds, timeoutMs / 1000, 1, "timeoutSeconds", warnings) * 1000;
 		}
 	}
 	return timeoutMs;
@@ -284,16 +302,16 @@ export function resolveConfig(loaded: LoadedConfigs, options: ResolveOptions): R
 		apiKey: credential.apiKey,
 		apiKeySource: credential.source,
 		baseUrl: resolveBaseUrl(configs).replace(/\/+$/, ""),
-		timeoutMs: resolveTimeout(configs),
+		timeoutMs: resolveTimeout(configs, warnings),
 		groups: mergeGroups(configs, warnings, options.knownGroups),
 		headers: resolveHeaders(configs),
 		defaults: resolveDefaults(configs),
 		wait: {
-			agent: mergeWait(configs, "agent"),
-			webset: mergeWait(configs, "webset"),
-			batch: mergeWait(configs, "batch"),
+			agent: mergeWait(configs, "agent", warnings),
+			webset: mergeWait(configs, "webset", warnings),
+			batch: mergeWait(configs, "batch", warnings),
 		},
-		output: mergeOutput(configs),
+		output: mergeOutput(configs, warnings),
 	};
 }
 
