@@ -10,19 +10,6 @@ Exa には検索・本文抽出・回答・Agent・Websets・Batch など多く�
 | オンデマンド | `exa_similar` / `exa_agent_*` / `exa_monitor` / `exa_websets` / `exa_webhooks` / `exa_batch` / `exa_request` | `exa_help` でトピックを指定したとき、または設定・`/exa enable` で有効にしたとき |
 | 任意のエンドポイント | `exa_request` | `raw` グループを有効にしたとき |
 
-## 使い方
-
-`EXA_API_KEY` を設定して Pi を起動します。
-
-```bash
-export EXA_API_KEY=...
-pi
-```
-
-モデルは Web の調査が必要になると `exa_search` を呼びます。ユーザーが URL を渡せば `exa_contents` で本文を読みます。
-
-高度な引数や別のエンドポイントが必要になると、モデルは `exa_help` でトピックを指定して詳細を読み、必要なツールを有効にします。
-
 ## インストール
 
 要件は次のとおりです。
@@ -47,6 +34,19 @@ pi install /path/to/pi-exa
 ```bash
 pi --extension /path/to/pi-exa/src/index.ts
 ```
+
+## 使い方
+
+`EXA_API_KEY` を設定して Pi を起動します。
+
+```bash
+export EXA_API_KEY=...
+pi
+```
+
+モデルは Web の調査が必要になると `exa_search` を呼びます。ユーザーが URL を渡せば `exa_contents` で本文を読みます。
+
+高度な引数や別のエンドポイントが必要になると、モデルは `exa_help` でトピックを指定して詳細を読み、必要なツールを有効にします。
 
 ## 設定
 
@@ -128,6 +128,17 @@ API キーは次の順で探します。
 
 `/exa init` は `~/.pi/agent/exa.json` にサンプル設定を書き出します。既存のファイルは `/exa init force` で上書きします。
 
+## コマンド
+
+| コマンド | 動作 |
+|---|---|
+| `/exa status`（`/exa help` も同じ） | 設定ファイル、API キーの有無と取得元、起動時のグループ、有効な Exa ツールを表示する |
+| `/exa config` | 解決済みの設定を表示する。API キーは先頭 4 文字と末尾 4 文字を残してマスクする（8 文字以下は `***`） |
+| `/exa enable <group...>` | 指定したグループのツールを有効にする。`all` で全グループ |
+| `/exa init [force]` | `~/.pi/agent/exa.json` にサンプル設定を書き出す。`force` がないときは既存のファイルを上書きしない |
+
+グループ名は `core` / `similar` / `agent` / `monitors` / `websets` / `webhooks` / `batches` / `raw` です。
+
 ## 仕組み
 
 ### 常時有効のツール
@@ -198,17 +209,6 @@ Agent の実行、Websets、Batch は、完了まで時間がかかります。�
 - `exa_request` は、パスを索引と照合してから送ります。索引にないパスは、近いパスの候補を返して拒否します。
 - リクエストは `timeoutSeconds` を超えるとタイムアウトします。
 
-## コマンド
-
-| コマンド | 動作 |
-|---|---|
-| `/exa status`（`/exa help` も同じ） | 設定ファイル、API キーの有無と取得元、起動時のグループ、有効な Exa ツールを表示する |
-| `/exa config` | 解決済みの設定を表示する。API キーは先頭 4 文字と末尾 4 文字を残してマスクする（8 文字以下は `***`） |
-| `/exa enable <group...>` | 指定したグループのツールを有効にする。`all` で全グループ |
-| `/exa init [force]` | `~/.pi/agent/exa.json` にサンプル設定を書き出す。`force` がないときは既存のファイルを上書きしない |
-
-グループ名は `core` / `similar` / `agent` / `monitors` / `websets` / `webhooks` / `batches` / `raw` です。
-
 ## 制限
 
 - Exa の API キーが必要です。キーがないと、API を呼ぶツールはエラーを返します。
@@ -216,3 +216,7 @@ Agent の実行、Websets、Batch は、完了まで時間がかかります。�
 - `research` トピックのエンドポイントは、Exa のドキュメントで legacy / deprecated と記載されています。新しい用途では使わず、Deep 検索や Agent の利用を検討してください。
 - Agent の実行、deep 系の検索、Batch は通常の検索より課金が大きくなります。`includeCost` を有効にすると、応答に含まれるコストを確認できます。
 - ストリーミングには対応していません。
+
+## ライセンス
+
+[MIT](LICENSE)
